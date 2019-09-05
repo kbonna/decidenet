@@ -1,0 +1,14 @@
+model{
+
+    # Priors
+    theta1 ~ dbeta(1, 1)
+    theta2 ~ dbeta(1, 1)
+
+    # Generative model
+    k1 ~ dbin(theta1, n1)
+    k2 ~ dbin(theta2, n2)
+
+    # Difference between rates
+    delta <- theta1 - theta2
+
+}

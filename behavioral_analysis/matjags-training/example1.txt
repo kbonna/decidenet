@@ -1,0 +1,16 @@
+model {
+
+    # Uniform prior on rate theta
+    theta ~ dbeta(1, 1) 
+
+    # Prior predictive
+    thetaprior ~ dbeta(1, 1)
+    priorpredk ~ dbin(thetaprior, n)
+
+    # Posterior predictive
+    postpredk ~ dbin(theta, n)
+
+    # Generative model
+    # It return number of successes k assuming success probability is theta
+    k ~ dbin(theta, n)  
+}

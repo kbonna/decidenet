@@ -1,0 +1,16 @@
+model{
+    
+    # Priors
+    theta ~ dbeta(1, 1)
+    n ~ dcat(p[])
+    for (i in 1:nmax){
+        p[i] <- 1/nmax
+    }
+
+    # Generative model
+    for (i in 1:m){
+        k[i] ~ dbin(theta, n)
+    }
+    
+
+}
