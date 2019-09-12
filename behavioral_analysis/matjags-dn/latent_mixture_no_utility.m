@@ -30,7 +30,7 @@ rwd  = (rwd + 1) / 2;                               % 0: left box; 1: right box
 fname_model = fullfile(pwd, strcat(mfilename, '.txt'));
 doparallel = 0;                                     % parallelization flag
 thinning = 2;                                       % thinning parameter
-nChains = 1;
+nChains = 4;
 nBurnin = 500;
 nSamples = 2000;
 
