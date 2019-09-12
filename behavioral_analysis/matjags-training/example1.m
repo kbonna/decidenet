@@ -24,7 +24,7 @@ end
 tic
 [samples, stats, structArray] = matjags( ...
     datastruct, ...                     % Observed data
-    fullfile(pwd, 'example1.txt'), ...  % File that contains model definition
+    fullfile(pwd, 'JAGS', 'example1.txt'), ...  % File that contains model definition
     init0, ...                          % Initial values for latent vatiables
     'doparallel' , doparallel, ...      % Parallelization flag
     'nchains', nchains,...              % Number of MCMC chains
