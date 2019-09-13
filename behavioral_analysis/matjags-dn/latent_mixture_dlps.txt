@@ -1,0 +1,129 @@
+model {
+
+###########################################################################
+## Generative model #######################################################
+###########################################################################
+
+for (i in 1:nSubjects){
+    for (j in 1:nConditions){
+
+        #all models
+        vl_dlp[i, j, 1]     = .5
+        vr_dlp[i, j, 1]     = .5
+        vl_dls[i, j, 1]     = .5
+        vr_dls[i, j, 1]     = .5
+
+        eul_dlp[i, j, 1]    = vl_dlp[i, j, 1] * xl[i, j, 1]        
+        eur_dlp[i, j, 1]    = vr_dlp[i, j, 1] * xr[i, j, 1]         
+        theta_dlp[i, j, 1]  = (1) / (1 + exp(beta_dlp[i] * (eul_dlp[i, j, 1] - eur_dlp[i, j, 1])))        
+        eul_dls[i, j, 1]    = vl_dls[i, j, 1] * xl[i, j, 1]        
+        eur_dls[i, j, 1]    = vr_dls[i, j, 1] * xr[i, j, 1]         
+        theta_dls[i, j, 1]  = (1) / (1 + exp(beta_dls[i] * (eul_dls[i, j, 1] - eur_dls[i, j, 1])))        
+      
+        # Choose submodel & generate response
+        # 1=DLP; 2=DPS
+        theta[i, j, 1]      = ifelse(z[i]==1, theta_dlp[i, j, 1], theta_dls[i, j, 1]) 
+        resp[i, j, 1]       ~ dbern(theta[i, j, 1])             
+
+        for (t in 2:nTrials){
+            
+            # Update (reinforcement learning)
+            #DLP
+            vl_dlp[i, j, t] = ifelse(j==1,  
+                ifelse(                                                         #reward condition
+                rwd[i, j, t-1] == 0,            
+                vl_dlp[i, j, t-1] + alpha_dlp[i, 1] * (1 - vl_dlp[i, j, t-1]),  #left rewarded (+PE)
+                vl_dlp[i, j, t-1] + alpha_dlp[i, 2] * (0 - vl_dlp[i, j, t-1])), #right rewarded (-PE)
+                ifelse(                                                         #punishment condition
+                rwd[i, j, t-1] == 0,
+                vl_dlp[i, j, t-1] + alpha_dlp[i, 2] * (1 - vl_dlp[i, j, t-1]),  #right not punished (-PE)
+                vl_dlp[i, j, t-1] + alpha_dlp[i, 1] * (0 - vl_dlp[i, j, t-1]))) #left not punished (+PE)
+            vr_dlp[i, j, t] = ifelse(j==1,  
+                ifelse(                                                         #reward condition
+                rwd[i, j, t-1] == 1,            
+                vr_dlp[i, j, t-1] + alpha_dlp[i, 1] * (1 - vr_dlp[i, j, t-1]),  #right rewarded (+PE)
+                vr_dlp[i, j, t-1] + alpha_dlp[i, 2] * (0 - vr_dlp[i, j, t-1])), #left rewarded (-PE)
+                ifelse(                                                         #punishment condition
+                rwd[i, j, t-1] == 1,
+                vr_dlp[i, j, t-1] + alpha_dlp[i, 2] * (1 - vr_dlp[i, j, t-1]),  #left not punished (-PE)
+                vr_dlp[i, j, t-1] + alpha_dlp[i, 1] * (0 - vr_dlp[i, j, t-1]))) #right not punished (+PE)
+
+            #DLS
+            vl_dls[i, j, t] = ifelse(  
+                rwd[i, j, t-1] == 0,            
+                vl_dls[i, j, t-1] + alpha_dls[i, 1] * (1 - vl_dls[i, j, t-1]),  
+                vl_dls[i, j, t-1] + alpha_dls[i, 2] * (0 - vl_dls[i, j, t-1]))
+
+            vr_dls[i, j, t] = ifelse(
+                rwd[i, j, t-1] == 1,            
+                vr_dls[i, j, t-1] + alpha_dls[i, 1] * (1 - vr_dls[i, j, t-1]),  #right rewarded (+PE)
+                vr_dls[i, j, t-1] + alpha_dls[i, 2] * (0 - vr_dls[i, j, t-1])) #left rewarded (-PE)
+
+
+
+            # Recalculate utilities
+            eul_dls[i, j, t]    = vl_dls[i, j, t] * xl[i, j, t]        
+            eur_dls[i, j, t]    = vr_dls[i, j, t] * xr[i, j, t]         
+            theta_dls[i, j, t]  = (1) / (1 + exp(beta_dls[i] * (eul_dls[i, j, t] - eur_dls[i, j, t])))        
+            eul_dlp[i, j, t]    = vl_dlp[i, j, t] * xl[i, j, t]        
+            eur_dlp[i, j, t]    = vr_dlp[i, j, t] * xr[i, j, t]         
+            theta_dlp[i, j, t]  = (1) / (1 + exp(beta_dlp[i] * (eul_dlp[i, j, t] - eur_dlp[i, j, t])))      
+
+            # Choose submodel & generate response
+            tempth[i, j, t]     = ifelse(z[i]==1, theta_dlp[i, j, t], theta_dls[i, j, t])  
+            theta[i, j, t]      = max(0.000001, min(0.999999, tempth[i, j, t])) # ensure 0 < cp < 1
+            resp[i, j, t]       ~ dbern(theta[i, j, t])   
+            
+        }#end trials
+    }#end conditions
+}#end subjects
+
+###########################################################################
+## Priors #################################################################
+###########################################################################
+
+# Model indicator variable 
+for (i in 1:nSubjects){    
+    z[i]        ~ dcat(pz[])
+}    
+
+# Behavioral priors
+for (i in 1:nSubjects){
+
+    #DLP 
+    # 1=+PE, 2=-PE
+    for (j in 1:2){
+        alpha_dlp[i, j] ~ dbeta(a_alpha_dlp[j], b_alpha_dlp[j])
+    }
+    beta_dlp[i]     ~ dlnorm(mu_beta_dlp, sigma_beta_dlp)    
+    
+    #DLS 
+    # 1=+PE(selected), 2=-PE(selected)
+    for (j in 1:2){
+        alpha_dls[i, j] ~ dbeta(a_alpha_dls[j], b_alpha_dls[j])
+    }
+    beta_dls[i]     ~ dlnorm(mu_beta_dls, sigma_beta_dls)    
+
+}#end subjects
+
+###########################################################################
+## Hyperpriors ############################################################
+###########################################################################
+
+#DLP
+for (j in 1:2){
+    a_alpha_dlp[j]  ~ dunif(1, 10)
+    b_alpha_dlp[j]  ~ dunif(1, 10)
+}
+mu_beta_dlp         ~ dunif(-2.3, 3.4)
+sigma_beta_dlp      ~ dunif(0.01, 1.6)
+
+#DLS
+for (j in 1:2){
+    a_alpha_dls[j]  ~ dunif(1, 10)
+    b_alpha_dls[j]  ~ dunif(1, 10)
+}
+mu_beta_dls         ~ dunif(-2.3, 3.4)
+sigma_beta_dls      ~ dunif(0.01, 1.6)
+
+}
