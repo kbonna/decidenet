@@ -22,7 +22,7 @@ rwd = beh(:, :, :, strcmp(meta.dim4, 'rwd'));       % rewarded / punished side (
 nSubjects = numel(meta.dim1);
 nConditions = numel(meta.dim2);
 nTrials = numel(meta.dim3);
-pz = [1/3, 1/3, .1/3];                              % prior for model selector                        
+pz = [1/4, 1/4, 1/4, 1/4];                              % prior for model selector                        
 resp(resp == 0) = NaN;                              % set missing values to NaNs
 resp = (resp + 1) / 2;                              % 0: left box; 1: right box; NaN: miss
 rwd  = (rwd + 1) / 2;                               % 0: left box; 1: right box (bci)  
@@ -33,9 +33,9 @@ rwd_win(:, 2, :) = 1 - rwd_win(:, 2, :);            % convert from being chosen 
 fname_model = fullfile(pwd, strcat(mfilename, '.txt'));
 doparallel = 0;                                     % parallelization flag
 thinning = 1;                                       % thinning parameter
-nChains = 1;
+nChains = 2;
 nBurnin = 0;
-nSamples = 2000;
+nSamples = 1000;
 
 
 % Initialize Markov chain values
@@ -74,6 +74,7 @@ fprintf('Running JAGS...\n');
         'alpha_sl', 'beta_sl', ...
         'alpha_dlo', 'beta_dlo', ...
         'alpha_dlp', 'beta_dlp', ...
+        'alpha_dlb', 'beta_dlb', ...
         'vl_dlp', 'vr_dlp'}, ...        % List of latent variables to monitor
     'savejagsoutput', 0 , ...           % Save command line output produced by JAGS?
     'verbosity', 2 , ...                % 0=do not produce any output; 1=minimal text output; 2=maximum text output
