@@ -1,4 +1,40 @@
 import numpy as np
+import json
+
+def load_behavioral_data(root: str, verbose=True) -> tuple:
+    """Load aggregated behavioral files. 
+    
+    Function assumes that name of the file 
+    is behavioral_data_clean_all with .npy extension for data file and .json 
+    extension for metadata file. It also assumes that both files are within 
+    the same directory specified as root. 
+    
+    Args:
+        root: 
+            Path to directory containing behavioral files
+        verbose: 
+            Do you want additional information regarding loaded files?
+        
+    Returns:
+        A tuple of (ndarray, dict). First element contains ndarray with 
+        behavioral data, second element is a dict decribing all fields of the 
+        array.
+    """
+    import os
+    
+    beh_path = os.path.join(root, "behavioral_data_clean_all.npy")
+    beh_meta_path = beh_path.replace("npy", "json")
+    
+    beh = np.load(beh_path)
+    with open(beh_meta_path, "r") as f:
+        meta = json.loads(f.read())
+        
+    if verbose:
+        print("Shape of beh array:", beh.shape)
+        print("Conditions", [(i, cond) for i, cond in enumerate(meta['dim2'])])
+        print("Columns:", [(i, col) for i, col in enumerate(meta['dim4'])])        
+        
+    return beh, meta
 
 def estimate_values(beh, meta, subject, condition, alpha):
     '''Implements TD learning model on experienced probabilistic outcomes.

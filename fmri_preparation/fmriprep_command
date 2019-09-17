@@ -1,0 +1,4 @@
+fmriprep-docker bids/ bids/derivatives/ participant --participant-label p01 --fs-license-file /home/kmb/Desktop/Neuroscience/Toolboxes/license/license.txt --fs-no-reconall
+
+
+
