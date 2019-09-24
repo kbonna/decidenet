@@ -1,0 +1,162 @@
+model {
+
+#
+#   Latent behavioral variables:
+#
+#   wa, wb:     estimated probability of correct choice
+#   eua, eub:   expected utility
+#   theta:      choice probability for right box
+#
+#   Implemented behavioral models:
+#
+#   ...
+#   
+#   Loop variables:
+#
+#   i: 
+#       subjects (range 1, 2, ..., 32)
+#   j: 
+#       task conditions (range 1, 2)
+#           1: reward
+#           2: punishment
+#   k: 
+#       prediction error signs (range 1, 2)
+#           1: positive prediction error
+#           2: negative prediction error
+#   t: 
+#       trials (range 1, 2, ..., 110)
+#
+
+###########################################################################
+## Generative model #######################################################
+###########################################################################
+
+for (i in 1:nSubjects){
+    for (j in 1:nConditions){                                              
+
+        #PI
+        wa_pi[i, j, 1] = .5
+        wb_pi[i, j, 1] = .5
+        eua_pi[i, j, 1] = ifelse(j==1, wa_pi[i, j, 1] * xa[i, j, 1], (1-wa_pi[i, j, 1]) * xa[i, j, 1])        
+        eub_pi[i, j, 1] = ifelse(j==1, wb_pi[i, j, 1] * xb[i, j, 1], (1-wb_pi[i, j, 1]) * xb[i, j, 1])           
+        theta_pi[i, j, 1] = (1) / (1 + exp(beta_pi[i] * (eua_pi[i, j, 1] - eub_pi[i, j, 1])))         
+
+        #PD
+        wa_tmp_pd[i, j, 1] = .5
+        wb_tmp_pd[i, j, 1] = .5
+        wa_pd[i, j, 1] = .5
+        wb_pd[i, j, 1] = .5   
+        eua_pd[i, j, 1] = ifelse(j==1, wa_pd[i, j, 1] * xa[i, j, 1], (1-wa_pd[i, j, 1]) * xa[i, j, 1])        
+        eub_pd[i, j, 1] = ifelse(j==1, wb_pd[i, j, 1] * xb[i, j, 1], (1-wb_pd[i, j, 1]) * xb[i, j, 1])         
+        theta_pd[i, j, 1] = (1) / (1 + exp(beta_pd[i] * (eua_pd[i, j, 1] - eub_pd[i, j, 1])))   
+        respFictPD[i, j, 1] ~ dbern(theta_pd[i, j, 1])                     # fictitious response
+        
+        # Choose submodel & generate response
+        theta[i, j, 1]      = ifelse(z[i]==1, theta_pi[i, j, 1], theta_pd[i, j, 1]) 
+        resp[i, j, 1]       ~ dbern(theta[i, j, 1])
+
+        for (t in 2:nTrials){
+            
+            # Update probability estimates (reinforcement learning)           
+            #PI
+            wa_pi[i, j, t] = ifelse(rwdwin[i, j, t-1] == 0,
+                wa_pi[i, j, t-1] + alpha_pi[i, j] * (1 - wa_pi[i, j, t-1]), 
+                wa_pi[i, j, t-1] + alpha_pi[i, j] * (0 - wa_pi[i, j, t-1]))
+            wb_pi[i, j, t] = ifelse(rwdwin[i, j, t-1] == 1,                                   
+                wb_pi[i, j, t-1] + alpha_pi[i, j] * (1 - wb_pi[i, j, t-1]), 
+                wb_pi[i, j, t-1] + alpha_pi[i, j] * (0 - wb_pi[i, j, t-1]))
+
+            #PD
+            wa_tmp_pd[i, j, t] = ifelse(rwdwin[i, j, t-1] == 0,           
+                wa_pd[i, j, t-1] + alpha_pd[i, j, 1] * (1 - wa_pd[i, j, t-1]),
+                wa_pd[i, j, t-1] + alpha_pd[i, j, 2] * (0 - wa_pd[i, j, t-1]))
+            wb_tmp_pd[i, j, t] = ifelse(rwdwin[i, j, t-1] == 1,
+                wb_pd[i, j, t-1] + alpha_pd[i, j, 1] * (1 - wb_pd[i, j, t-1]),
+                wb_pd[i, j, t-1] + alpha_pd[i, j, 2] * (0 - wb_pd[i, j, t-1]))
+            wa_pd[i, j, t] = ifelse(respFictPD[i, j, t-1] == 0, 
+                wa_tmp_pd[i, j, t], 
+                1 - wb_tmp_pd[i, j, t])
+            wb_pd[i, j, t] = ifelse(respFictPD[i, j, t-1] == 1, 
+                wb_tmp_pd[i, j, t],
+                1-wa_tmp_pd[i, j, t])
+
+            ###############################################################
+            # Recalculate utilities
+            #PI
+            eua_pi[i, j, t] = ifelse(j==1, wa_pi[i, j, t] * xa[i, j, t], (1-wa_pi[i, j, t]) * xa[i, j, t])        
+            eub_pi[i, j, t] = ifelse(j==1, wb_pi[i, j, t] * xb[i, j, t], (1-wb_pi[i, j, t]) * xb[i, j, t])           
+            theta_pi[i, j, t] = (1) / (1 + exp(beta_pi[i] * (eua_pi[i, j, t] - eub_pi[i, j, t]))) 
+
+            #PD
+            eua_pd[i, j, t] = ifelse(j==1, wa_pd[i, j, t] * xa[i, j, t], (1-wa_pd[i, j, t]) * xa[i, j, t])        
+            eub_pd[i, j, t] = ifelse(j==1, wb_pd[i, j, t] * xb[i, j, t], (1-wb_pd[i, j, t]) * xb[i, j, t])            
+            theta_pd[i, j, t] = (1) / (1 + exp(beta_pd[i] * (eua_pd[i, j, t] - eub_pd[i, j, t]))) 
+            respFictPD[i, j, t] ~ dbern(max(0.000001, min(0.999999, theta_pd[i, j, t])))   
+
+            # Choose submodel & generate response
+            tempth[i, j, t] = ifelse(z[i]==1, theta_pi[i, j, t], theta_pd[i, j, t])
+            theta[i, j, t] = max(0.000001, min(0.999999, tempth[i, j, t])) # ensure 0 < cp < 1
+            resp[i, j, t] ~ dbern(theta[i, j, t])   
+            
+        }#end trials
+    }#end conditions
+}#end subjects
+
+###########################################################################
+## Priors #################################################################
+###########################################################################
+
+# Model indicator variable z can take on any value from 1:nModels
+for (i in 1:nModels){
+    pz[i] = 1 / nModels
+}
+for (i in 1:nSubjects){    
+    z[i]        ~ dcat(pz[])
+}    
+
+# Behavioral priors
+for (i in 1:nSubjects){
+
+    #PI
+    for (j in 1:nConditions){
+        alpha_pi[i, j] ~ dbeta(a_alpha_pi[j], b_alpha_pi[j])
+    }
+    beta_pi[i] ~ dlnorm(mu_beta_pi, sigma_beta_pi)
+    xi_alpha_pi[i] = alpha_pi[i, 1] - alpha_pi[i, 2]                       # for model comparison 
+
+    #PD 
+    for (j in 1:nConditions){
+        for (k in 1:nPredErrSign){
+            alpha_pd[i, j, k] ~ dbeta(a_alpha_pd[j, k], b_alpha_pd[j, k])
+        }
+    }
+    beta_pd[i] ~ dlnorm(mu_beta_pd, sigma_beta_pd)
+    for (k in 1:nPredErrSign){
+        xi_alpha_pd[i, k] = alpha_pd[i, 1, k] - alpha_pd[i, 2, k] 
+    }
+
+}#end subjects
+
+###########################################################################
+## Hyperpriors ############################################################
+###########################################################################
+
+#PI
+for (j in 1:nConditions){
+    a_alpha_pi[j] ~ dunif(1, 10)
+    b_alpha_pi[j] ~ dunif(1, 10)
+}
+mu_beta_pi ~ dunif(-2.3, 3.4)
+sigma_beta_pi ~ dunif(0.01, 1.6) 
+
+#PD
+for (j in 1:nConditions){
+    for (k in 1:nPredErrSign){
+        a_alpha_pd[j, k] ~ dunif(1, 10)
+        b_alpha_pd[j, k] ~ dunif(1, 10)
+    }
+}
+mu_beta_pd ~ dunif(-2.3, 3.4)
+sigma_beta_pd ~ dunif(0.01, 1.6)
+
+}
