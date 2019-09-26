@@ -107,9 +107,12 @@ for (i in 1:nSubjects){
 ###########################################################################
 
 # Model indicator variable z can take on any value from 1:nModels
-for (i in 1:nModels){
-    pz[i] = 1 / nModels
-}
+#for (i in 1:nModels){
+#    pz[i] = 1 / nModels
+#}
+pz[1] = 0   # run only PI model
+pz[2] = 1   # run only PD model
+
 for (i in 1:nSubjects){    
     z[i]        ~ dcat(pz[])
 }    
@@ -123,6 +126,7 @@ for (i in 1:nSubjects){
     }
     beta_pi[i] ~ dlnorm(mu_beta_pi, sigma_beta_pi)
     xi_alpha_pi[i] = alpha_pi[i, 1] - alpha_pi[i, 2]                       # for model comparison 
+    mean_alpha_pi[i] = (alpha_pi[i, 1] + alpha_pi[i, 2]) / 2
 
     #PD 
     for (j in 1:nConditions){
@@ -133,6 +137,7 @@ for (i in 1:nSubjects){
     beta_pd[i] ~ dlnorm(mu_beta_pd, sigma_beta_pd)
     for (k in 1:nPredErrSign){
         xi_alpha_pd[i, k] = alpha_pd[i, 1, k] - alpha_pd[i, 2, k] 
+        mean_alpha_pd[i, k] = (alpha_pd[i, 1, k] + alpha_pd[i, 2, k]) / 2
     }
 
 }#end subjects

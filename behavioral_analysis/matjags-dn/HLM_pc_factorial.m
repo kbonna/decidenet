@@ -1,5 +1,6 @@
 clear; clc;
 
+%% Load and process experiment data
 % data location
 root = '/home/kmb/Desktop/Neuroscience/Projects/BONNA_decide_net/data/main_fmri_study/sourcedata/behavioral/';
 fname_beh = 'behavioral_data_clean_all.mat';
@@ -31,13 +32,14 @@ rwd  = (rwd + 1) / 2;                               % 0: left box; 1: right box 
 rwdwin = rwd;                                      
 rwdwin(:, 2, :) = 1 - rwdwin(:, 2, :);              % convert from being chosen to favor interpretation
 
-% JAGS Parameters
+%% JAGS Setup
+% Parameters
 fname_model = fullfile(pwd, strcat(mfilename, '.txt'));
-doparallel = 0;                                     % parallelization flag
+doparallel = 1;                                     % parallelization flag
 thinning = 1;                                       % thinning parameter
-nChains = 1;                                        
-nBurnin = 0;
-nSamples = 5000;
+nChains = 4;                                        
+nBurnin = 1000;
+nSamples = 4000;
 
 % Initialize Markov chain values
 for i=1:nChains
@@ -46,8 +48,8 @@ for i=1:nChains
 end
 
 % Assign MATLAB variables to the observed JAGS nodes
-resp(resp<Inf) = NaN;
-resp(1)=1;
+%resp(resp<Inf) = NaN;
+%resp(1)=1;
 datastruct = struct(...
     'xa', xa, ...
     'xb', xb, ...
@@ -59,16 +61,18 @@ datastruct = struct(...
     'nTrials', nTrials, ...
     'nModels', nModels);
 
-
 monitorparams = {...
-    'z', 'pz', ...
-    'alpha_pi', 'beta_pi', 'xi_alpha_pi' ...
-    'alpha_pd', 'beta_pd', 'xi_alpha_pd' ...
+    'z', ...
+    'a_alpha_pd', 'b_alpha_pd', 'mu_beta_pd', 'sigma_beta_pd', ...
+    'alpha_pd', 'beta_pd', 'xi_alpha_pd', 'theta_pd', ...
     };
+    %'a_alpha_pi', 'b_alpha_pi', 'mu_beta_pi', 'sigma_beta_pi', ...
+    %'alpha_pi', 'beta_pi', 'xi_alpha_pi', 'theta_pi', ...
+
 
 %% RUN JAGS
 fprintf('Running JAGS...\n');
-
+tic 
 [samples, stats, structArray] = matjags( ...
     datastruct, ...                     % Observed data
     fname_model, ...                    % File that contains model definition
@@ -82,5 +86,5 @@ fprintf('Running JAGS...\n');
     'savejagsoutput', 0 , ...           % Save command line output produced by JAGS?
     'verbosity', 2 , ...                % 0=do not produce any output; 1=minimal text output; 2=maximum text output
     'cleanup', 1 );                     % clean up of temporary files?
-
+toc
 
