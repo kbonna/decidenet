@@ -1,8 +1,8 @@
-load('data/condition_prediction_run1_pi_only.mat', 'samples');
+load('data/pc_factorial_run1_pi_only.mat', 'samples');
 alpha_single_rew = samples.alpha_pi(:, :, :, 1);
 alpha_single_pun = samples.alpha_pi(:, :, :, 2);
 clear samples
-load('data/condition_prediction_run1_pd_only.mat', 'samples');
+load('data/pc_factorial_run1_pd_only.mat', 'samples');
 alpha_plus_rew = samples.alpha_pd(:, :, :, 1, 1);
 alpha_plus_pun = samples.alpha_pd(:, :, :, 2, 1);
 alpha_minus_rew = samples.alpha_pd(:, :, :, 1, 2);
