@@ -38,8 +38,8 @@ fname_model = fullfile(pwd, strcat(mfilename, '.txt'));
 doparallel = 1;                                     % parallelization flag
 thinning = 1;                                       % thinning parameter
 nChains = 4;                                        
-nBurnin = 5000;
-nSamples = 10000;
+nBurnin = 2000;
+nSamples = 5000;
 
 % Initialize Markov chain values
 for i=1:nChains
