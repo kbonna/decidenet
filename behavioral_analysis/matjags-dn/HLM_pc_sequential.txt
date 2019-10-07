@@ -39,14 +39,16 @@ for (i in 1:nSubjects){
         wb_pici[i, j, 1] = .5
         eua_pici[i, j, 1] = ifelse(j==1, wa_pici[i, j, 1] * xa[i, j, 1], (1-wa_pici[i, j, 1]) * xa[i, j, 1])        
         eub_pici[i, j, 1] = ifelse(j==1, wb_pici[i, j, 1] * xb[i, j, 1], (1-wb_pici[i, j, 1]) * xb[i, j, 1])           
-        theta_pici[i, j, 1] = (1) / (1 + exp(beta_pici[i] * (eua_pici[i, j, 1] - eub_pici[i, j, 1])))         
-        
+        theta[i, j, 1, 1] = (1) / (1 + exp(beta_pici[i] * (eua_pici[i, j, 1] - eub_pici[i, j, 1])))         
+        theta[i, j, 1, 5] = (1) / (1 + exp(beta_pici[i] * (eua_pici[i, j, 1] - eub_pici[i, j, 1])))         
+
         #PICD
         wa_picd[i, j, 1] = .5
         wb_picd[i, j, 1] = .5
         eua_picd[i, j, 1] = ifelse(j==1, wa_picd[i, j, 1] * xa[i, j, 1], (1-wa_picd[i, j, 1]) * xa[i, j, 1])        
         eub_picd[i, j, 1] = ifelse(j==1, wb_picd[i, j, 1] * xb[i, j, 1], (1-wb_picd[i, j, 1]) * xb[i, j, 1])           
-        theta_picd[i, j, 1] = (1) / (1 + exp(beta_picd[i] * (eua_picd[i, j, 1] - eub_picd[i, j, 1])))         
+        theta[i, j, 1, 2] = (1) / (1 + exp(beta_picd[i] * (eua_picd[i, j, 1] - eub_picd[i, j, 1])))         
+        theta[i, j, 1, 6] = (1) / (1 + exp(beta_picd[i] * (eua_picd[i, j, 1] - eub_picd[i, j, 1])))         
 
         #PDCI
         wa_tmp_pdci[i, j, 1] = .5
@@ -55,8 +57,9 @@ for (i in 1:nSubjects){
         wb_pdci[i, j, 1] = .5   
         eua_pdci[i, j, 1] = ifelse(j==1, wa_pdci[i, j, 1] * xa[i, j, 1], (1-wa_pdci[i, j, 1]) * xa[i, j, 1])        
         eub_pdci[i, j, 1] = ifelse(j==1, wb_pdci[i, j, 1] * xb[i, j, 1], (1-wb_pdci[i, j, 1]) * xb[i, j, 1])         
-        theta_pdci[i, j, 1] = (1) / (1 + exp(beta_pdci[i] * (eua_pdci[i, j, 1] - eub_pdci[i, j, 1])))   
-        respFictPDCI[i, j, 1] ~ dbern(theta_pdci[i, j, 1])                     # fictitious response
+        theta[i, j, 1, 3] = (1) / (1 + exp(beta_pdci[i] * (eua_pdci[i, j, 1] - eub_pdci[i, j, 1])))   
+        theta[i, j, 1, 7] = (1) / (1 + exp(beta_pdci[i] * (eua_pdci[i, j, 1] - eub_pdci[i, j, 1])))   
+        respFictPDCI[i, j, 1] ~ dbern((1) / (1 + exp(beta_pdci[i] * (eua_pdci[i, j, 1] - eub_pdci[i, j, 1])))) # fictitious response
 
         #PDCD
         wa_tmp_pdcd[i, j, 1] = .5
@@ -65,15 +68,12 @@ for (i in 1:nSubjects){
         wb_pdcd[i, j, 1] = .5   
         eua_pdcd[i, j, 1] = ifelse(j==1, wa_pdcd[i, j, 1] * xa[i, j, 1], (1-wa_pdcd[i, j, 1]) * xa[i, j, 1])        
         eub_pdcd[i, j, 1] = ifelse(j==1, wb_pdcd[i, j, 1] * xb[i, j, 1], (1-wb_pdcd[i, j, 1]) * xb[i, j, 1])         
-        theta_pdcd[i, j, 1] = (1) / (1 + exp(beta_pdcd[i] * (eua_pdcd[i, j, 1] - eub_pdcd[i, j, 1])))   
-        respFictPDCD[i, j, 1] ~ dbern(theta_pdcd[i, j, 1])                     # fictitious response
+        theta[i, j, 1, 4] = (1) / (1 + exp(beta_pdcd[i] * (eua_pdcd[i, j, 1] - eub_pdcd[i, j, 1])))   
+        theta[i, j, 1, 8] = (1) / (1 + exp(beta_pdcd[i] * (eua_pdcd[i, j, 1] - eub_pdcd[i, j, 1])))   
+        respFictPDCD4[i, j, 1] ~ dbern((1) / (1 + exp(beta_pdcd[i] * (eua_pdcd[i, j, 1] - eub_pdcd[i, j, 1])))) # fictitious response
         
         # Choose submodel & generate response
-        theta[i, j, 1] = ifelse(z[i]==1, theta_pici[i, j, 1],
-                         ifelse(z[i]==2, theta_picd[i, j, 1],
-                         ifelse(z[i]==3, theta_pdci[i, j, 1],
-                                         theta_pdcd[i, j, 1])))
-        resp[i, j, 1] ~ dbern(theta[i, j, 1])
+        resp[i, j, 1] ~ dbern(theta[i, j, 1, z[i]])
 
         for (t in 2:nTrials){
             
@@ -128,32 +128,31 @@ for (i in 1:nSubjects){
             #PICI
             eua_pici[i, j, t] = ifelse(j==1, wa_pici[i, j, t] * xa[i, j, t], (1-wa_pici[i, j, t]) * xa[i, j, t])        
             eub_pici[i, j, t] = ifelse(j==1, wb_pici[i, j, t] * xb[i, j, t], (1-wb_pici[i, j, t]) * xb[i, j, t])           
-            theta_pici[i, j, t] = (1) / (1 + exp(beta_pici[i] * (eua_pici[i, j, t] - eub_pici[i, j, t]))) 
+            theta[i, j, t, 1] = (1) / (1 + exp(beta_pici[i] * (eua_pici[i, j, t] - eub_pici[i, j, t]))) 
+            theta[i, j, t, 5] = (1) / (1 + exp(beta_pici[i] * (eua_pici[i, j, t] - eub_pici[i, j, t]))) 
 
             #PICD
             eua_picd[i, j, t] = ifelse(j==1, wa_picd[i, j, t] * xa[i, j, t], (1-wa_picd[i, j, t]) * xa[i, j, t])        
             eub_picd[i, j, t] = ifelse(j==1, wb_picd[i, j, t] * xb[i, j, t], (1-wb_picd[i, j, t]) * xb[i, j, t])           
-            theta_picd[i, j, t] = (1) / (1 + exp(beta_picd[i] * (eua_picd[i, j, t] - eub_picd[i, j, t]))) 
+            theta[i, j, t, 2] = (1) / (1 + exp(beta_picd[i] * (eua_picd[i, j, t] - eub_picd[i, j, t]))) 
+            theta[i, j, t, 6] = (1) / (1 + exp(beta_picd[i] * (eua_picd[i, j, t] - eub_picd[i, j, t]))) 
            
             #PDCI
             eua_pdci[i, j, t] = ifelse(j==1, wa_pdci[i, j, t] * xa[i, j, t], (1-wa_pdci[i, j, t]) * xa[i, j, t])        
             eub_pdci[i, j, t] = ifelse(j==1, wb_pdci[i, j, t] * xb[i, j, t], (1-wb_pdci[i, j, t]) * xb[i, j, t])            
-            theta_pdci[i, j, t] = (1) / (1 + exp(beta_pdci[i] * (eua_pdci[i, j, t] - eub_pdci[i, j, t]))) 
-            respFictPDCI[i, j, t] ~ dbern(max(0.000001, min(0.999999, theta_pdci[i, j, t])))   
+            theta[i, j, t, 3] = (1) / (1 + exp(beta_pdci[i] * (eua_pdci[i, j, t] - eub_pdci[i, j, t]))) 
+            theta[i, j, t, 7] = (1) / (1 + exp(beta_pdci[i] * (eua_pdci[i, j, t] - eub_pdci[i, j, t]))) 
+            respFictPDCI[i, j, t] ~ dbern(max(0.000001, min(0.999999, (1) / (1 + exp(beta_pdci[i] * (eua_pdci[i, j, t] - eub_pdci[i, j, t]))))))   
 
             #PDCD
             eua_pdcd[i, j, t] = ifelse(j==1, wa_pdcd[i, j, t] * xa[i, j, t], (1-wa_pdcd[i, j, t]) * xa[i, j, t])        
             eub_pdcd[i, j, t] = ifelse(j==1, wb_pdcd[i, j, t] * xb[i, j, t], (1-wb_pdcd[i, j, t]) * xb[i, j, t])            
-            theta_pdcd[i, j, t] = (1) / (1 + exp(beta_pdcd[i] * (eua_pdcd[i, j, t] - eub_pdcd[i, j, t]))) 
-            respFictPDCD[i, j, t] ~ dbern(max(0.000001, min(0.999999, theta_pdcd[i, j, t])))   
+            theta[i, j, t, 4] = (1) / (1 + exp(beta_pdcd[i] * (eua_pdcd[i, j, t] - eub_pdcd[i, j, t]))) 
+            theta[i, j, t, 8] = (1) / (1 + exp(beta_pdcd[i] * (eua_pdcd[i, j, t] - eub_pdcd[i, j, t]))) 
+            respFictPDCD[i, j, t] ~ dbern(max(0.000001, min(0.999999, (1) / (1 + exp(beta_pdcd[i] * (eua_pdcd[i, j, t] - eub_pdcd[i, j, t]))))))   
 
             # Choose submodel & generate response
-            tempth[i, j, t] = ifelse(z[i]==1, theta_pici[i, j, t],
-                              ifelse(z[i]==2, theta_picd[i, j, t],
-                              ifelse(z[i]==3, theta_pdci[i, j, t],
-                                              theta_pdcd[i, j, t])))
-            theta[i, j, t] = max(0.000001, min(0.999999, tempth[i, j, t])) # ensure 0 < cp < 1
-            resp[i, j, t] ~ dbern(theta[i, j, t])   
+            resp[i, j, t] ~ dbern(max(0.000001, min(0.999999, theta[i, j, t, z[i]])))    
             
         }#end trials
     }#end conditions
@@ -163,14 +162,18 @@ for (i in 1:nSubjects){
 ## Priors #################################################################
 ###########################################################################
 
-# Model indicator variable z can take on any value from 1:nModels
-for (i in 1:nModels){
-    pz[i] = 1 / nModels
+# Model indicator variable z can take on any value from 1:2*nModels
+for (i in 1:8){
+    pz[i] = 1 / 8
 }
-
-for (i in 1:nSubjects){    
-    z[i] ~ dcat(pz[])
-}    
+# The model indicator variable z is subject to two stochastic processes, to prevent getting stuck
+for (i in 1:nSubjects){
+    px_z1[i] ~ dcat(pz[])
+    px_z2[i] ~ dcat(pz[])
+    delta_z1[i] = px_z2[i] - 1
+    sum_z[i] = px_z1[i] + delta_z1[i]
+    z[i] = (sum_z[i] - (8 * trunc(sum_z[i]/8))) + 1
+}
 
 # Behavioral priors
 for (i in 1:nSubjects){
