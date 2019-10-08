@@ -54,13 +54,83 @@ def estimate_values(beh, meta, subject, condition, alpha):
     val = np.zeros((beh.shape[2], 2))
     val[0] = [.5, .5] # Initial beliefs (agnostic)
 
-    rewarded = beh[subject, condition, :, meta['dim4'].index('rwd')][:-1]
+    rewarded = np.copy(beh[subject, condition, :, meta['dim4'].index('rwd')][:-1])
 
     for trial, rwd in enumerate(rewarded):
         val[trial+1, 1] = val[trial, 1] + alpha * ((rwd + 1)/2 - val[trial, 1])
         val[trial+1, 0] = val[trial, 0] + alpha * ((-rwd + 1)/2 - val[trial, 0])
 
     return val
+
+def estimate_values_pd(beh, meta, subject, condition, alpha_plus, alpha_minus):
+    '''Implements TD learning model with separate learning rates for positive 
+    and negative prediction errors.
+
+    Args:
+        beh (np.array): aggregated behavioral responses
+        meta (dict): description of beh array coding
+        subject (int): subject index
+        condition (int): task condition index
+        alpha_plus (float): learning rate for positive PE
+        alpha_minus (float): learning rate for negative PE
+
+    Returns:
+        val (np.array): reflects algorithm trialwise beliefs about
+            probabilities that box will be chosen (rewarded / punished)
+    '''
+    
+    val = np.zeros((beh.shape[2], 2))
+    val[0] = [.5, .5] # Initial beliefs (agnostic)
+
+    rewarded = np.copy(beh[subject, condition, :, meta['dim4'].index('rwd')][:-1])
+    response = np.copy(beh[subject, condition, :, meta['dim4'].index('response')][:-1])
+
+    # establish trialwise learning rates
+    if condition == 0:
+        alpha = alpha_plus * (rewarded == response) \
+              + alpha_minus * (rewarded != response) 
+    else:
+        alpha = alpha_plus * ((-1)*rewarded == response) \
+              + alpha_minus * ((-1)*rewarded != response) 
+
+    for trial, rwd in enumerate(rewarded):
+        val[trial+1, 1] = val[trial, 1] \
+                        + alpha[trial] * ((rwd + 1)/2 - val[trial, 1])
+        val[trial+1, 0] = val[trial, 0] \
+                        + alpha[trial] * ((-rwd + 1)/2 - val[trial, 0])
+    
+    return val
+
+def estimate_pred_err(beh, meta, subject, condition, val):
+    '''Calculate trial-wise prediction error for correct choice probability.
+    
+    Args:
+        beh (np.array): aggregated behavioral responses
+        meta (dict): description of beh array coding
+        subject (int): subject index
+        condition (int): task condition index
+        val (np.array): reflects algorithm trialwise beliefs about
+            probabilities that box will be chosen (rewarded / punished)
+            
+    Returns:
+        pred_err (np.array): trial-wise prediction error values
+    '''
+
+    rewarded = np.copy(beh[subject, condition, :, meta['dim4'].index('rwd')])
+    response = np.copy(beh[subject, condition, :, meta['dim4'].index('response')])
+
+    if condition == 1:
+        val = np.fliplr(val) # change bci interpretation to correct interpretation
+        rewarded *= (-1)
+
+    response_mask = np.hstack((
+        response.reshape(-1, 1) == -1, 
+        response.reshape(-1, 1) == 1
+    ))
+
+    anticip_val = np.sum(np.multiply(val, response_mask), axis=1)
+    
+    return anticip_val - (rewarded == response)
 
 def estimate_utilities(beh, meta, subject, condition, gamma=1, delta=1):
     '''Implements function converting reward magnitude to experienced utility.
