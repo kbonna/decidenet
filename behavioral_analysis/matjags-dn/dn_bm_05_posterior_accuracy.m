@@ -1,3 +1,44 @@
+
+Skip to content
+
+    Why GitHub?
+                          
+
+
+                    
+Enterprise
+Explore
+                      
+
+                    
+Marketplace
+Pricing
+                       
+
+
+                        
+
+Sign in
+Sign up
+
+0
+0
+
+    0
+
+kbonna/DecideNet
+Code
+Issues 0
+Pull requests 0
+Projects 0
+Security
+Insights
+Join GitHub today
+
+GitHub is home to over 40 million developers working together to host and review code, manage projects, and build software together.
+DecideNet/behavioral_analysis/matjags-dn/analysis_6_posterior_accuracy.m
+@kbonna kbonna extended HLM analysis a32d08f 13 days ago
+113 lines (88 sloc) 2.54 KB
 load('data/condition_prediction_run1_pi_only.mat', 'samples');
 theta_pi = samples.theta_pi;
 clear samples
@@ -108,5 +149,20 @@ title('response similarity')
 
 saveas(f, 'figures/response_similarity_reordered.png')
 
+
+
+    © 2019 GitHub, Inc.
+    Terms
+    Privacy
+    Security
+    Status
+    Help
+
+    Contact GitHub
+    Pricing
+    API
+    Training
+    Blog
+    About
 
 
