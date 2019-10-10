@@ -130,7 +130,7 @@ def estimate_pred_err(beh, meta, subject, condition, val):
 
     anticip_val = np.sum(np.multiply(val, response_mask), axis=1)
     
-    return anticip_val - (rewarded == response)
+    return (rewarded == response) - anticip_val 
 
 def estimate_utilities(beh, meta, subject, condition, gamma=1, delta=1):
     '''Implements function converting reward magnitude to experienced utility.
