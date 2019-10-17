@@ -1,0 +1,241 @@
+model {
+
+#
+#   Latent behavioral variables:
+#
+#   wa, wb:     estimated probability of correct choice
+#   eua, eub:   expected utility
+#   theta:      choice probability for right box
+#
+#   Implemented behavioral models:
+#
+#   ...
+#   
+#   Loop variables:
+#
+#   i: 
+#       subjects (range 1, 2, ..., 32)
+#   j: 
+#       task conditions (range 1, 2)
+#           1: reward
+#           2: punishment
+#   k: 
+#       prediction error signs (range 1, 2)
+#           1: positive prediction error
+#           2: negative prediction error
+#   t: 
+#       trials (range 1, 2, ..., 110)
+#
+
+###########################################################################
+## Generative model #######################################################
+###########################################################################
+
+for (i in 1:nSubjects){
+    for (j in 1:nConditions){                                              
+
+        #PICI
+        wa_pici[i, j, 1] = .5
+        wb_pici[i, j, 1] = .5
+        eua_pici[i, j, 1] = ifelse(j==1, wa_pici[i, j, 1] * xa[i, j, 1], (1-wa_pici[i, j, 1]) * xa[i, j, 1])        
+        eub_pici[i, j, 1] = ifelse(j==1, wb_pici[i, j, 1] * xb[i, j, 1], (1-wb_pici[i, j, 1]) * xb[i, j, 1])           
+        theta[i, j, 1, 1] = (1) / (1 + exp(beta_pici[i] * (eua_pici[i, j, 1] - eub_pici[i, j, 1])))         
+        theta[i, j, 1, 5] = (1) / (1 + exp(beta_pici[i] * (eua_pici[i, j, 1] - eub_pici[i, j, 1])))         
+
+        #PICD
+        wa_picd[i, j, 1] = .5
+        wb_picd[i, j, 1] = .5
+        eua_picd[i, j, 1] = ifelse(j==1, wa_picd[i, j, 1] * xa[i, j, 1], (1-wa_picd[i, j, 1]) * xa[i, j, 1])        
+        eub_picd[i, j, 1] = ifelse(j==1, wb_picd[i, j, 1] * xb[i, j, 1], (1-wb_picd[i, j, 1]) * xb[i, j, 1])           
+        theta[i, j, 1, 2] = (1) / (1 + exp(beta_picd[i] * (eua_picd[i, j, 1] - eub_picd[i, j, 1])))         
+        theta[i, j, 1, 6] = (1) / (1 + exp(beta_picd[i] * (eua_picd[i, j, 1] - eub_picd[i, j, 1])))         
+
+        #PDCI
+        wa_tmp_pdci[i, j, 1] = .5
+        wb_tmp_pdci[i, j, 1] = .5
+        wa_pdci[i, j, 1] = .5
+        wb_pdci[i, j, 1] = .5   
+        eua_pdci[i, j, 1] = ifelse(j==1, wa_pdci[i, j, 1] * xa[i, j, 1], (1-wa_pdci[i, j, 1]) * xa[i, j, 1])        
+        eub_pdci[i, j, 1] = ifelse(j==1, wb_pdci[i, j, 1] * xb[i, j, 1], (1-wb_pdci[i, j, 1]) * xb[i, j, 1])         
+        theta[i, j, 1, 3] = (1) / (1 + exp(beta_pdci[i] * (eua_pdci[i, j, 1] - eub_pdci[i, j, 1])))   
+        theta[i, j, 1, 7] = (1) / (1 + exp(beta_pdci[i] * (eua_pdci[i, j, 1] - eub_pdci[i, j, 1])))   
+        respFictPDCI[i, j, 1] ~ dbern((1) / (1 + exp(beta_pdci[i] * (eua_pdci[i, j, 1] - eub_pdci[i, j, 1])))) # fictitious response
+
+        #PDCD
+        wa_tmp_pdcd[i, j, 1] = .5
+        wb_tmp_pdcd[i, j, 1] = .5
+        wa_pdcd[i, j, 1] = .5
+        wb_pdcd[i, j, 1] = .5   
+        eua_pdcd[i, j, 1] = ifelse(j==1, wa_pdcd[i, j, 1] * xa[i, j, 1], (1-wa_pdcd[i, j, 1]) * xa[i, j, 1])        
+        eub_pdcd[i, j, 1] = ifelse(j==1, wb_pdcd[i, j, 1] * xb[i, j, 1], (1-wb_pdcd[i, j, 1]) * xb[i, j, 1])         
+        theta[i, j, 1, 4] = (1) / (1 + exp(beta_pdcd[i] * (eua_pdcd[i, j, 1] - eub_pdcd[i, j, 1])))   
+        theta[i, j, 1, 8] = (1) / (1 + exp(beta_pdcd[i] * (eua_pdcd[i, j, 1] - eub_pdcd[i, j, 1])))   
+        respFictPDCD[i, j, 1] ~ dbern((1) / (1 + exp(beta_pdcd[i] * (eua_pdcd[i, j, 1] - eub_pdcd[i, j, 1])))) # fictitious response
+        
+        # Choose submodel & generate response
+        resp[i, j, 1] ~ dbern(theta[i, j, 1, z])
+
+        for (t in 2:nTrials){
+       
+            # Update probability estimates (reinforcement learning)           
+            
+            #PICI
+            wa_pici[i, j, t] = ifelse(rwdwin[i, j, t-1] == 0,
+                wa_pici[i, j, t-1] + alpha_pici[i] * (1 - wa_pici[i, j, t-1]), 
+                wa_pici[i, j, t-1] + alpha_pici[i] * (0 - wa_pici[i, j, t-1]))
+            wb_pici[i, j, t] = ifelse(rwdwin[i, j, t-1] == 1,                                   
+                wb_pici[i, j, t-1] + alpha_pici[i] * (1 - wb_pici[i, j, t-1]), 
+                wb_pici[i, j, t-1] + alpha_pici[i] * (0 - wb_pici[i, j, t-1]))
+
+            #PICD
+            wa_picd[i, j, t] = ifelse(rwdwin[i, j, t-1] == 0,
+                wa_picd[i, j, t-1] + alpha_picd[i, j] * (1 - wa_picd[i, j, t-1]), 
+                wa_picd[i, j, t-1] + alpha_picd[i, j] * (0 - wa_picd[i, j, t-1]))
+            wb_picd[i, j, t] = ifelse(rwdwin[i, j, t-1] == 1,                                   
+                wb_picd[i, j, t-1] + alpha_picd[i, j] * (1 - wb_picd[i, j, t-1]), 
+                wb_picd[i, j, t-1] + alpha_picd[i, j] * (0 - wb_picd[i, j, t-1]))
+
+            #PDCI
+            wa_tmp_pdci[i, j, t] = ifelse(rwdwin[i, j, t-1] == 0,           
+                wa_pdci[i, j, t-1] + alpha_pdci[i, 1] * (1 - wa_pdci[i, j, t-1]),
+                wa_pdci[i, j, t-1] + alpha_pdci[i, 2] * (0 - wa_pdci[i, j, t-1]))
+            wb_tmp_pdci[i, j, t] = ifelse(rwdwin[i, j, t-1] == 1,
+                wb_pdci[i, j, t-1] + alpha_pdci[i, 1] * (1 - wb_pdci[i, j, t-1]),
+                wb_pdci[i, j, t-1] + alpha_pdci[i, 2] * (0 - wb_pdci[i, j, t-1]))
+            wa_pdci[i, j, t] = ifelse(respFictPDCI[i, j, t-1] == 0, 
+                wa_tmp_pdci[i, j, t], 
+                1 - wb_tmp_pdci[i, j, t])
+            wb_pdci[i, j, t] = ifelse(respFictPDCI[i, j, t-1] == 1, 
+                wb_tmp_pdci[i, j, t],
+                1-wa_tmp_pdci[i, j, t])
+
+            #PDCD
+            wa_tmp_pdcd[i, j, t] = ifelse(rwdwin[i, j, t-1] == 0,           
+                wa_pdcd[i, j, t-1] + alpha_pdcd[i, j, 1] * (1 - wa_pdcd[i, j, t-1]),
+                wa_pdcd[i, j, t-1] + alpha_pdcd[i, j, 2] * (0 - wa_pdcd[i, j, t-1]))
+            wb_tmp_pdcd[i, j, t] = ifelse(rwdwin[i, j, t-1] == 1,
+                wb_pdcd[i, j, t-1] + alpha_pdcd[i, j, 1] * (1 - wb_pdcd[i, j, t-1]),
+                wb_pdcd[i, j, t-1] + alpha_pdcd[i, j, 2] * (0 - wb_pdcd[i, j, t-1]))
+            wa_pdcd[i, j, t] = ifelse(respFictPDCD[i, j, t-1] == 0, 
+                wa_tmp_pdcd[i, j, t], 
+                1 - wb_tmp_pdcd[i, j, t])
+            wb_pdcd[i, j, t] = ifelse(respFictPDCD[i, j, t-1] == 1, 
+                wb_tmp_pdcd[i, j, t],
+                1-wa_tmp_pdcd[i, j, t])
+
+            # Recalculate utilities
+            
+            #PICI
+            eua_pici[i, j, t] = ifelse(j==1, wa_pici[i, j, t] * xa[i, j, t], (1-wa_pici[i, j, t]) * xa[i, j, t])        
+            eub_pici[i, j, t] = ifelse(j==1, wb_pici[i, j, t] * xb[i, j, t], (1-wb_pici[i, j, t]) * xb[i, j, t])           
+            theta[i, j, t, 1] = (1) / (1 + exp(beta_pici[i] * (eua_pici[i, j, t] - eub_pici[i, j, t]))) 
+            theta[i, j, t, 5] = (1) / (1 + exp(beta_pici[i] * (eua_pici[i, j, t] - eub_pici[i, j, t]))) 
+
+            #PICD
+            eua_picd[i, j, t] = ifelse(j==1, wa_picd[i, j, t] * xa[i, j, t], (1-wa_picd[i, j, t]) * xa[i, j, t])        
+            eub_picd[i, j, t] = ifelse(j==1, wb_picd[i, j, t] * xb[i, j, t], (1-wb_picd[i, j, t]) * xb[i, j, t])           
+            theta[i, j, t, 2] = (1) / (1 + exp(beta_picd[i] * (eua_picd[i, j, t] - eub_picd[i, j, t]))) 
+            theta[i, j, t, 6] = (1) / (1 + exp(beta_picd[i] * (eua_picd[i, j, t] - eub_picd[i, j, t]))) 
+           
+            #PDCI
+            eua_pdci[i, j, t] = ifelse(j==1, wa_pdci[i, j, t] * xa[i, j, t], (1-wa_pdci[i, j, t]) * xa[i, j, t])        
+            eub_pdci[i, j, t] = ifelse(j==1, wb_pdci[i, j, t] * xb[i, j, t], (1-wb_pdci[i, j, t]) * xb[i, j, t])            
+            theta[i, j, t, 3] = (1) / (1 + exp(beta_pdci[i] * (eua_pdci[i, j, t] - eub_pdci[i, j, t]))) 
+            theta[i, j, t, 7] = (1) / (1 + exp(beta_pdci[i] * (eua_pdci[i, j, t] - eub_pdci[i, j, t]))) 
+            respFictPDCI[i, j, t] ~ dbern(max(0.000001, min(0.999999, (1) / (1 + exp(beta_pdci[i] * (eua_pdci[i, j, t] - eub_pdci[i, j, t]))))))   
+
+            #PDCD
+            eua_pdcd[i, j, t] = ifelse(j==1, wa_pdcd[i, j, t] * xa[i, j, t], (1-wa_pdcd[i, j, t]) * xa[i, j, t])        
+            eub_pdcd[i, j, t] = ifelse(j==1, wb_pdcd[i, j, t] * xb[i, j, t], (1-wb_pdcd[i, j, t]) * xb[i, j, t])            
+            theta[i, j, t, 4] = (1) / (1 + exp(beta_pdcd[i] * (eua_pdcd[i, j, t] - eub_pdcd[i, j, t]))) 
+            theta[i, j, t, 8] = (1) / (1 + exp(beta_pdcd[i] * (eua_pdcd[i, j, t] - eub_pdcd[i, j, t]))) 
+            respFictPDCD[i, j, t] ~ dbern(max(0.000001, min(0.999999, (1) / (1 + exp(beta_pdcd[i] * (eua_pdcd[i, j, t] - eub_pdcd[i, j, t]))))))   
+
+            # Choose submodel & generate response
+            resp[i, j, t] ~ dbern(max(0.000001, min(0.999999, theta[i, j, t, z])))    
+            
+        }#end trials
+    }#end conditions
+}#end subjects
+
+###########################################################################
+## Priors #################################################################
+###########################################################################
+
+# Model indicator variable z can take on any value from 1:2*nModels
+for (i in 1:8){
+    pz[i] = 1 / 8
+}
+# The model indicator variable z is subject to two stochastic processes, to prevent getting stuck
+px_z1 ~ dcat(pz[])
+px_z2 ~ dcat(pz[])
+delta_z1 = px_z2 - 1
+sum_z = px_z1 + delta_z1
+z = (sum_z - (8 * trunc(sum_z/8))) + 1
+
+# Behavioral priors
+for (i in 1:nSubjects){
+
+    #PICI
+    alpha_pici[i] ~ dbeta(a_alpha_pici, b_alpha_pici)
+    beta_pici[i] ~ dlnorm(mu_beta_pici, sigma_beta_pici)
+
+    #PICD
+    for (j in 1:nConditions){
+        alpha_picd[i, j] ~ dbeta(a_alpha_picd[j], b_alpha_picd[j])
+    }
+    beta_picd[i] ~ dlnorm(mu_beta_picd, sigma_beta_picd)
+
+    #PDCI
+    for (j in 1:nPredErrSign){
+        alpha_pdci[i, j] ~ dbeta(a_alpha_pdci[j], b_alpha_pdci[j])
+    }
+    beta_pdci[i] ~ dlnorm(mu_beta_pdci, sigma_beta_pdci)
+
+    #PDCD
+    for (j in 1:nConditions){
+        for (k in 1:nPredErrSign){
+            alpha_pdcd[i, j, k] ~ dbeta(a_alpha_pdcd[j, k], b_alpha_pdcd[j, k])
+        }
+    }
+    beta_pdcd[i] ~ dlnorm(mu_beta_pdcd, sigma_beta_pdcd)
+
+}#end subjects
+
+###########################################################################
+## Hyperpriors ############################################################
+###########################################################################
+
+#PICI
+a_alpha_pici ~ dunif(1, 10)
+b_alpha_pici ~ dunif(1, 10)
+mu_beta_pici ~ dunif(-2.3, 3.4)
+sigma_beta_pici ~ dunif(0.01, 1.6) 
+
+#PICD
+for (j in 1:nConditions){
+    a_alpha_picd[j] ~ dunif(1, 10)
+    b_alpha_picd[j] ~ dunif(1, 10)
+}
+mu_beta_picd ~ dunif(-2.3, 3.4)
+sigma_beta_picd ~ dunif(0.01, 1.6) 
+
+#PDCI
+for (j in 1:nPredErrSign){
+    a_alpha_pdci[j] ~ dunif(1, 10)
+    b_alpha_pdci[j] ~ dunif(1, 10)
+}
+mu_beta_pdci ~ dunif(-2.3, 3.4)
+sigma_beta_pdci ~ dunif(0.01, 1.6) 
+
+#PDCD
+for (j in 1:nConditions){
+    for (k in 1:nPredErrSign){
+        a_alpha_pdcd[j, k] ~ dunif(1, 10)
+        b_alpha_pdcd[j, k] ~ dunif(1, 10)
+    }
+}
+    mu_beta_pdcd ~ dunif(-2.3, 3.4)
+sigma_beta_pdcd ~ dunif(0.01, 1.6)
+
+}

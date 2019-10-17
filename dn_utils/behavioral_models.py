@@ -101,9 +101,9 @@ def estimate_values_pd(beh, meta, subject, condition, alpha_plus, alpha_minus):
     
     return val
 
-def estimate_pred_err(beh, meta, subject, condition, val):
-    '''Calculate trial-wise prediction error for correct choice probability.
-    
+def estimate_regressors(beh, meta, subject, condition, val):
+    '''Calculate trial-wise regressors for chosen option.
+
     Args:
         beh (np.array): aggregated behavioral responses
         meta (dict): description of beh array coding
@@ -111,26 +111,35 @@ def estimate_pred_err(beh, meta, subject, condition, val):
         condition (int): task condition index
         val (np.array): reflects algorithm trialwise beliefs about
             probabilities that box will be chosen (rewarded / punished)
-            
-    Returns:
-        pred_err (np.array): trial-wise prediction error values
-    '''
 
+    Returns (3-tuple):
+        anticip_pwin (np.arry): expected probability of choosing correct box
+        anticip_rew (np.arry): pascalian expected value
+        pred_err (np.array): prediction error
+    '''
     rewarded = np.copy(beh[subject, condition, :, meta['dim4'].index('rwd')])
     response = np.copy(beh[subject, condition, :, meta['dim4'].index('response')])
-
-    if condition == 1:
-        val = np.fliplr(val) # change bci interpretation to correct interpretation
-        rewarded *= (-1)
+    magn_both = np.hstack((
+        np.copy(beh[subject, condition, :, meta['dim4'].index('magn_left')])[:, np.newaxis],
+        np.copy(beh[subject, condition, :, meta['dim4'].index('magn_right')])[:, np.newaxis],
+    ))
 
     response_mask = np.hstack((
         response.reshape(-1, 1) == -1, 
         response.reshape(-1, 1) == 1
     ))
 
-    anticip_val = np.sum(np.multiply(val, response_mask), axis=1)
+    # Ensure correct val interpretation
+    anticip_val = np.sum(np.multiply(val, response_mask), axis=1) # bci
+    if condition == 1:
+        val = np.fliplr(val) # change bci interpretation to correct interpretation
+        rewarded *= (-1)
+    anticip_pwin = np.sum(np.multiply(val, response_mask), axis=1) # correct interpretation
     
-    return (rewarded == response) - anticip_val 
+    anticip_rew = np.sum(magn_both * response_mask, 1) * anticip_val
+    pred_err = (rewarded == response) - anticip_pwin
+
+    return anticip_pwin, anticip_rew, pred_err
 
 def estimate_utilities(beh, meta, subject, condition, gamma=1, delta=1):
     '''Implements function converting reward magnitude to experienced utility.
