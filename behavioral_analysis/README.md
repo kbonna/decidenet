@@ -1,4 +1,4 @@
-# Behavioral data conventions
+Behavioral data conventions
 
 ## Files
 Behavioral data is stored in two separate files `behavioral_data_clean_all.npy` and `behavioral_data_clean_all.json`. File with *.npy extension is array containing actual data and corresponding *.json file contains names of corresponding fields. 
@@ -7,7 +7,6 @@ Behavioral data is stored in two separate files `behavioral_data_clean_all.npy` 
 
 ## Fields
 Aggregated behavioral data contains **all task information, all behavioral responses  / recordings and timing of all scanner events**.  Multidimensional array `beh` aggregates data for subjects, conditions, trials for different events. Shape of the array is $N_{subjects} \times N_{conditions} \times N_{trials} \times N_{variables}$. 
-
 ### Task structure variables
 | variable name | code | values |
 |--|--|--|
@@ -60,8 +59,8 @@ Note that learning rates can be represented either as separate vectors or arrays
 ### Tracked and computed variables
 | variable name | code | text |
 |--|--|--|
-| Expected probability for side for being chosen | `wch` / `wch_l` and `wch_r` | $\rho$ |
-| Expected probability for side for being correct | `wco` / `wco_l` and `wco_r` | $p$|
+| Expected probability for side for being chosen | `wbci` / `wbci_l` and `wbci_r` | $\rho$ |
+| Expected probability for side for being correct | `wcor` / `wcor_l` and `wcor_r` | $p$|
 | Expected value (utility) | `util` / `util_l` and `util_r` | $v$|
 | Reward magnitude | `magn` / `magn_l` and `magn_r` | $x$|
 | Choice probability | `prob` / `prob_l` and `prob_r` | $P$|
