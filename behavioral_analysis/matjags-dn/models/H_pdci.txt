@@ -1,0 +1,106 @@
+model {
+
+#
+#   Latent behavioral variables:
+#
+#   wa, wb:     estimated probability of correct choice
+#   eua, eub:   expected utility
+#   theta:      choice probability for right box
+#
+#   Implemented behavioral models:
+#
+#   ...
+#   
+#   Loop variables:
+#
+#   i: 
+#       subjects (range 1, 2, ..., 32)
+#   j: 
+#       task conditions (range 1, 2)
+#           1: reward
+#           2: punishment
+#   t: 
+#       trials (range 1, 2, ..., 110)
+#
+
+###########################################################################
+## Generative model #######################################################
+###########################################################################
+
+for (i in 1:nSubjects){
+    for (j in 1:nConditions){                                              
+
+        #PDCI
+        wa_tmp_pdci[i, j, 1] = .5
+        wb_tmp_pdci[i, j, 1] = .5
+        wa_pdci[i, j, 1] = .5
+        wb_pdci[i, j, 1] = .5   
+        eua_pdci[i, j, 1] = ifelse(j==1, wa_pdci[i, j, 1] * xa[i, j, 1], (1-wa_pdci[i, j, 1]) * xa[i, j, 1])        
+        eub_pdci[i, j, 1] = ifelse(j==1, wb_pdci[i, j, 1] * xb[i, j, 1], (1-wb_pdci[i, j, 1]) * xb[i, j, 1])         
+        theta[i, j, 1] = (1) / (1 + exp(beta_pdci[i] * (eua_pdci[i, j, 1] - eub_pdci[i, j, 1])))   
+        respFictPDCI[i, j, 1] ~ dbern((1) / (1 + exp(beta_pdci[i] * (eua_pdci[i, j, 1] - eub_pdci[i, j, 1])))) # fictitious response
+
+        # Choose submodel & generate response
+        resp[i, j, 1] ~ dbern(theta[i, j, 1])
+
+        for (t in 2:nTrials){
+            
+            # Update probability estimates (reinforcement learning)           
+
+            #PDCI
+            wa_tmp_pdci[i, j, t] = ifelse(rwdwin[i, j, t-1] == 0,           
+                wa_pdci[i, j, t-1] + alpha_pdci[i, 1] * (1 - wa_pdci[i, j, t-1]),
+                wa_pdci[i, j, t-1] + alpha_pdci[i, 2] * (0 - wa_pdci[i, j, t-1]))
+            wb_tmp_pdci[i, j, t] = ifelse(rwdwin[i, j, t-1] == 1,
+                wb_pdci[i, j, t-1] + alpha_pdci[i, 1] * (1 - wb_pdci[i, j, t-1]),
+                wb_pdci[i, j, t-1] + alpha_pdci[i, 2] * (0 - wb_pdci[i, j, t-1]))
+            wa_pdci[i, j, t] = ifelse(respFictPDCI[i, j, t-1] == 0, 
+                wa_tmp_pdci[i, j, t], 
+                1 - wb_tmp_pdci[i, j, t])
+            wb_pdci[i, j, t] = ifelse(respFictPDCI[i, j, t-1] == 1, 
+                wb_tmp_pdci[i, j, t],
+                1-wa_tmp_pdci[i, j, t])
+
+            # Recalculate utilities
+                     
+            #PDCI
+            eua_pdci[i, j, t] = ifelse(j==1, wa_pdci[i, j, t] * xa[i, j, t], (1-wa_pdci[i, j, t]) * xa[i, j, t])        
+            eub_pdci[i, j, t] = ifelse(j==1, wb_pdci[i, j, t] * xb[i, j, t], (1-wb_pdci[i, j, t]) * xb[i, j, t])            
+            theta[i, j, t] = (1) / (1 + exp(beta_pdci[i] * (eua_pdci[i, j, t] - eub_pdci[i, j, t]))) 
+            respFictPDCI[i, j, t] ~ dbern(max(0.000001, min(0.999999, (1) / (1 + exp(beta_pdci[i] * (eua_pdci[i, j, t] - eub_pdci[i, j, t]))))))   
+
+            # Choose submodel & generate response
+            resp[i, j, t] ~ dbern(max(0.000001, min(0.999999, theta[i, j, t])))    
+            
+        }#end trials
+    }#end conditions
+}#end subjects
+
+###########################################################################
+## Priors #################################################################
+###########################################################################
+
+# Behavioral priors
+for (i in 1:nSubjects){
+
+    #PDCI
+    for (j in 1:nPredErrSign){
+        alpha_pdci[i, j] ~ dbeta(a_alpha_pdci[j], b_alpha_pdci[j])
+    }
+    beta_pdci[i] ~ dlnorm(mu_beta_pdci, sigma_beta_pdci)
+
+}#end subjects
+
+###########################################################################
+## Hyperpriors ############################################################
+###########################################################################
+
+#PDCI
+for (j in 1:nPredErrSign){
+    a_alpha_pdci[j] ~ dunif(1, 10)
+    b_alpha_pdci[j] ~ dunif(1, 10)
+}
+mu_beta_pdci ~ dunif(-2.3, 3.4)
+sigma_beta_pdci ~ dunif(0.01, 1.6) 
+
+}
