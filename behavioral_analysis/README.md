@@ -61,8 +61,9 @@ Note that learning rates can be represented either as separate vectors or arrays
 |--|--|--|
 | Expected probability for side for being chosen | `wbci` / `wbci_l` and `wbci_r` | $\rho$ |
 | Expected probability for side for being correct | `wcor` / `wcor_l` and `wcor_r` | $p$|
-| Expected value (utility) | `util` / `util_l` and `util_r` | $v$|
+| Expected value (utility) | `eval` / `eval_l` and `eval_r` | $v$|
 | Reward magnitude | `magn` / `magn_l` and `magn_r` | $x$|
+| Reward utility | `util` / `util_l` and `util_r` | $u$ |
 | Choice probability | `prob` / `prob_l` and `prob_r` | $P$|
 
 Whenever `l` and `r` suffixes are not used, **array representation** of tracked variables is assumed. In array representation $N_{trials} \times N_{sides}$ array is representing variable state across task time course for both sides simultaneously. 
