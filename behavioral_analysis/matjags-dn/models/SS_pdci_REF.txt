@@ -1,0 +1,75 @@
+model {
+
+#
+#   Here, single subject Bayesian model is evaluated for PDCI model. It is 
+#   then used for parameter recovery. 
+#   
+#   Loop variables:
+#
+#   j: 
+#       task conditions (range 1, 2)
+#           1: reward
+#           2: punishment
+#   t: 
+#       trials (range 1, 2, ..., 110)
+#
+
+###########################################################################
+## Generative model #######################################################
+###########################################################################
+
+for (j in 1:nConditions){                                              
+
+    #PDCI
+    wcor_l_pdci_tmp[j, 1] = .5
+    wcor_r_pdci_tmp[j, 1] = .5
+    wcor_l_pdci[j, 1] = .5
+    wcor_r_pdci[j, 1] = .5   
+    util_l_pdci[j, 1] = ifelse(j==1, wcor_l_pdci[j, 1] * xl[j, 1], (1-wcor_l_pdci[j, 1]) * xl[j, 1])        
+    util_r_pdci[j, 1] = ifelse(j==1, wcor_r_pdci[j, 1] * xr[j, 1], (1-wcor_r_pdci[j, 1]) * xr[j, 1])         
+    prob[j, 1] = (1) / (1 + exp(beta_pdci * (util_l_pdci[j, 1] - util_r_pdci[j, 1])))   
+    respFictPDCI[j, 1] ~ dbern((1) / (1 + exp(beta_pdci * (util_l_pdci[j, 1] - util_r_pdci[j, 1])))) # fictitious response
+
+    # Generate response
+    resp[j, 1] ~ dbern(prob[j, 1])
+
+    for (t in 2:nTrials){
+
+        # Update probability estimates (reinforcement learning)           
+        #PDCI
+        wcor_l_pdci_tmp[j, t] = ifelse(side[j, t-1] == 0,           
+            wcor_l_pdci[j, t-1] + alpha_pdci[1] * (1 - wcor_l_pdci[j, t-1]),
+            wcor_l_pdci[j, t-1] + alpha_pdci[2] * (0 - wcor_l_pdci[j, t-1]))
+        wcor_r_pdci_tmp[j, t] = ifelse(side[j, t-1] == 1,
+            wcor_r_pdci[j, t-1] + alpha_pdci[1] * (1 - wcor_r_pdci[j, t-1]),
+            wcor_r_pdci[j, t-1] + alpha_pdci[2] * (0 - wcor_r_pdci[j, t-1]))
+        wcor_l_pdci[j, t] = ifelse(respFictPDCI[j, t-1] == 0, 
+            wcor_l_pdci_tmp[j, t], 
+            1 - wcor_r_pdci_tmp[j, t])
+        wcor_r_pdci[j, t] = ifelse(respFictPDCI[j, t-1] == 1, 
+            wcor_r_pdci_tmp[j, t],
+            1-wcor_l_pdci_tmp[j, t])
+
+        # Recalculate utilities
+        #PDCI
+        util_l_pdci[j, t] = ifelse(j==1, wcor_l_pdci[j, t] * xl[j, t], (1-wcor_l_pdci[j, t]) * xl[j, t])        
+        util_r_pdci[j, t] = ifelse(j==1, wcor_r_pdci[j, t] * xr[j, t], (1-wcor_r_pdci[j, t]) * xr[j, t])            
+        prob[j, t] = (1) / (1 + exp(beta_pdci * (util_l_pdci[j, t] - util_r_pdci[j, t]))) 
+        respFictPDCI[j, t] ~ dbern(max(0.000001, min(0.999999, (1) / (1 + exp(beta_pdci * (util_l_pdci[j, t] - util_r_pdci[j, t]))))))   
+
+        # Choose submodel & generate response
+        resp[j, t] ~ dbern(max(0.000001, min(0.999999, prob[j, t])))    
+
+    }#end trials
+}#end conditions
+
+###########################################################################
+## Priors #################################################################
+###########################################################################
+
+for (j in 1:nPredErrSign){   
+    alpha_pdci[j] ~ dbeta(1, 1)
+}
+beta_pdci ~ dlnorm(-1, 1)
+
+}
