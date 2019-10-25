@@ -3,7 +3,7 @@ clear; clc;
 %% Setup
 % task data location
 root = '/home/kmb/Desktop/Neuroscience/Projects/BONNA_decide_net/data/main_fmri_study/sourcedata/behavioral/';
-root_resp_artif = '/home/kmb/Desktop/Neuroscience/Projects/BONNA_decide_net/code/behavioral_analysis/matjags-dn/data/parameter_recovery/';
+root_resp_artif = '/home/kmb/Desktop/Neuroscience/Projects/BONNA_decide_net/code/behavioral_analysis/matjags-dn/data/parameter_recovery_synthetic_data/';
 fname_beh = 'behavioral_data_clean_all_REF.mat';
 fname_meta = 'behavioral_data_clean_all_REF.json';
    
@@ -39,7 +39,7 @@ monitorparams = {'alpha_pdci', 'beta_pdci'};
 
 %% Loop over parameter space
 nTaskSamples = 5;   % number of different task realizations
-bt = 1;             % fixed inverse-temperature
+bt = 3;             % fixed inverse-temperature
 
 samples_ap = zeros(21, 21, nChains*nSamples, nTaskSamples);
 samples_am = zeros(21, 21, nChains*nSamples, nTaskSamples);

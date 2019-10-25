@@ -36,6 +36,27 @@ def load_behavioral_data(root: str, verbose=True) -> tuple:
         
     return beh, meta
 
+def get_response_mask(beh, meta, subject, condition):
+    """Return masking array indicating subject response.
+    
+    Args:
+        beh (np.array): aggregated behavioral responses
+        meta (dict): description of beh array coding
+        subject (int): subject index
+        condition (int): task condition index
+    
+    Returns:
+        np.array (n_trials x n_sides): 
+            mask array for subject response 
+            1: indicate that option was selected
+            0: option was not selected
+    """
+    resp = (beh[subject, condition, :, meta['dim4'].index('response')] + 1) / 2
+    mask_resp = np.hstack((1-resp[:, np.newaxis], resp[:, np.newaxis]))
+    mask_resp[mask_resp == .5] = 0
+    
+    return mask_resp
+
 def estimate_wbci(beh, meta, subject, condition, alpha):
     '''Implements TD learning model on side probabilities. Note that estimated 
     probability is the probability that side will be chosen (rewarded in 
