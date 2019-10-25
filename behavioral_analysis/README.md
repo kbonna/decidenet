@@ -1,4 +1,5 @@
-Behavioral data conventions
+
+# Behavioral data conventions
 
 ## Files
 Behavioral data is stored in two separate files `behavioral_data_clean_all.npy` and `behavioral_data_clean_all.json`. File with *.npy extension is array containing actual data and corresponding *.json file contains names of corresponding fields. 
@@ -44,14 +45,14 @@ Subscripts represent different events related with single trial. `iti` reflects 
 ### Algorithm parameters
 | variable name | code | text |
 |--|--|--|
-| learning rate | `alpha` | $\alpha$ |
-| learning rate for positive PE | `alpha_plus` / `alpha[first_index]` | $\alpha_+$ |
-| learning rate for negative PE | `alpha_minus` / `alpha[second_index]` | $\alpha_-$ |
-| learning rate for reward condition | `alpha_rew` / `alpha[first_index]` | $\alpha_{rew}$ |
-| learning rate for punishment condition | `alpha_pun` / `alpha[second_index]` | $\alpha_{pun}$ |
-| inverse-temperature | `beta` | $\beta$ |
-| loss aversion (prospect theory) | `gamma` | $\gamma$ |
-| risk aversion (prospect theory) | `delta` | $\delta$ |
+| learning rate | `alpha` | &alpha; |
+| learning rate for positive PE | `alpha_plus` / `alpha[first_index]` | &alpha;<sub>+</sub> |
+| learning rate for negative PE | `alpha_minus` / `alpha[second_index]` | &alpha;<sub>-</sub> |
+| learning rate for reward condition | `alpha_rew` / `alpha[first_index]` | &alpha;<sub>rew</sub> |
+| learning rate for punishment condition | `alpha_pun` / `alpha[second_index]` | &alpha;<sub>pun</sub> |
+| inverse-temperature | `beta` | &beta; |
+| loss aversion (prospect theory) | `gamma` | &gamma; |
+| risk aversion (prospect theory) | `delta` | &delta; |
 
 Note that learning rates can be represented either as separate vectors or arrays with columns corresponding to different learning rates. `first_index` and `second_index` are used instead of specific values because in Python `first_index` is 0, whereas in MATLAB it is 1 (and so on). In case of four learning rates model first dimension corresponds to task condition and second dimension corresponds to PE sign. 
 
@@ -59,12 +60,20 @@ Note that learning rates can be represented either as separate vectors or arrays
 ### Tracked and computed variables
 | variable name | code | text |
 |--|--|--|
-| Expected probability for side for being chosen | `wbci` / `wbci_l` and `wbci_r` | $\rho$ |
-| Expected probability for side for being correct | `wcor` / `wcor_l` and `wcor_r` | $p$|
-| Expected value (utility) | `exvl` / `exvl_l` and `exvl_r` | $v$|
-| Reward magnitude | `magn` / `magn_l` and `magn_r` | $x$|
-| Reward utility | `util` / `util_l` and `util_r` | $u$ |
-| Choice probability | `prob` / `prob_l` and `prob_r` | $P$|
+| Expected probability for side for being chosen | `wbci` / `wbci_l` and `wbci_r` | &rho; |
+| Expected probability for side for being correct | `wcor` / `wcor_l` and `wcor_r` | p |
+| Expected value (utility) | `exvl` / `exvl_l` and `exvl_r` | v |
+| Reward magnitude | `magn` / `magn_l` and `magn_r` | x |
+| Reward utility | `util` / `util_l` and `util_r` | u |
+| Choice probability | `prob` / `prob_l` and `prob_r` | P |
 
 Whenever `l` and `r` suffixes are not used, **array representation** of tracked variables is assumed. In array representation $N_{trials} \times N_{sides}$ array is representing variable state across task time course for both sides simultaneously. 
+
+## Directory structure
+
+- `.`:  notebooks for behavioral data processing, single subject parameter fitting (using cost function), behavioral data exploration and parameter recovery analysis
+- `matjags-dn`: contains code related to Bayesian model estimation using MATLAB and JAGS and further processing of posterior distributions 
+- `matjags-dn/models`: contains JAGS models written in BUGS language and MATLAB scripts calling `matjags.m` API to connecting models with behavioral data
+
+
 
