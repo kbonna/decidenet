@@ -1,7 +1,7 @@
 import numpy as np
 import json
 
-def load_behavioral_data(root: str, verbose=True) -> tuple:
+def load_behavioral_data(path: str, verbose=True) -> tuple:
     """Load aggregated behavioral files. 
     
     Function assumes that name of the file 
@@ -10,7 +10,7 @@ def load_behavioral_data(root: str, verbose=True) -> tuple:
     the same directory specified as root. 
     
     Args:
-        root: 
+        path: 
             Path to directory containing behavioral files
         verbose: 
             Do you want additional information regarding loaded files?
@@ -22,7 +22,7 @@ def load_behavioral_data(root: str, verbose=True) -> tuple:
     """
     import os
     
-    beh_path = os.path.join(root, "behavioral_data_clean_all.npy")
+    beh_path = os.path.join(path, "behavioral_data_clean_all_REF.npy")
     beh_meta_path = beh_path.replace("npy", "json")
     
     beh = np.load(beh_path)
@@ -36,8 +36,31 @@ def load_behavioral_data(root: str, verbose=True) -> tuple:
         
     return beh, meta
 
-def estimate_values(beh, meta, subject, condition, alpha):
-    '''Implements TD learning model on experienced probabilistic outcomes.
+def get_response_mask(beh, meta, subject, condition):
+    """Return masking array indicating subject response.
+    
+    Args:
+        beh (np.array): aggregated behavioral responses
+        meta (dict): description of beh array coding
+        subject (int): subject index
+        condition (int): task condition index
+    
+    Returns:
+        np.array (n_trials x n_sides): 
+            mask array for subject response 
+            1: indicate that option was selected
+            0: option was not selected
+    """
+    resp = (beh[subject, condition, :, meta['dim4'].index('response')] + 1) / 2
+    mask_resp = np.hstack((1-resp[:, np.newaxis], resp[:, np.newaxis]))
+    mask_resp[mask_resp == .5] = 0
+    
+    return mask_resp
+
+def estimate_wbci(beh, meta, subject, condition, alpha):
+    '''Implements TD learning model on side probabilities. Note that estimated 
+    probability is the probability that side will be chosen (rewarded in 
+    reward-seeking condition or punished in punishment-avoidance condition)
 
     Args:
         beh (np.array): aggregated behavioral responses
@@ -47,22 +70,25 @@ def estimate_values(beh, meta, subject, condition, alpha):
         alpha (float): learning rate
 
     Returns:
-        val (np.array): reflects algorithm trialwise beliefs about
-            probabilities that box will be rewarded / punished
+        np.array (n_trials x n_sides): 
+            reflects algorithm trialwise beliefs about probabilities that side 
+            will be chosen (rewarded / punished)
     '''
 
-    val = np.zeros((beh.shape[2], 2))
-    val[0] = [.5, .5] # Initial beliefs (agnostic)
+    wbci = np.zeros((beh.shape[2], 2))
+    wbci[0] = [.5, .5] # Initial beliefs (agnostic)
 
-    rewarded = np.copy(beh[subject, condition, :, meta['dim4'].index('rwd')][:-1])
+    side_bci = np.copy(
+        beh[subject, condition, :, meta['dim4'].index('side_bci')][:-1]
+    )
 
-    for trial, rwd in enumerate(rewarded):
-        val[trial+1, 1] = val[trial, 1] + alpha * ((rwd + 1)/2 - val[trial, 1])
-        val[trial+1, 0] = val[trial, 0] + alpha * ((-rwd + 1)/2 - val[trial, 0])
+    for t, rbci in enumerate(side_bci):
+        wbci[t+1, 1] = wbci[t, 1] + alpha * ((rbci + 1)/2 - wbci[t, 1])
+        wbci[t+1, 0] = wbci[t, 0] + alpha * ((-rbci + 1)/2 - wbci[t, 0])
 
-    return val
+    return wbci
 
-def estimate_values_pd(beh, meta, subject, condition, alpha_plus, alpha_minus):
+def estimate_wbci_pd(beh, meta, subject, condition, alpha_plus, alpha_minus):
     '''Implements TD learning model with separate learning rates for positive 
     and negative prediction errors.
 
@@ -75,73 +101,30 @@ def estimate_values_pd(beh, meta, subject, condition, alpha_plus, alpha_minus):
         alpha_minus (float): learning rate for negative PE
 
     Returns:
-        val (np.array): reflects algorithm trialwise beliefs about
+        (np.array): reflects algorithm trialwise beliefs about
             probabilities that box will be chosen (rewarded / punished)
     '''
     
-    val = np.zeros((beh.shape[2], 2))
-    val[0] = [.5, .5] # Initial beliefs (agnostic)
+    wbci = np.zeros((beh.shape[2], 2))
+    wbci[0] = [.5, .5] # Initial beliefs (agnostic)
 
-    rewarded = np.copy(beh[subject, condition, :, meta['dim4'].index('rwd')][:-1])
     response = np.copy(beh[subject, condition, :, meta['dim4'].index('response')][:-1])
-
+    side_bci = np.copy(beh[subject, condition, :, meta['dim4'].index('side_bci')][:-1])
+    side = np.copy(beh[subject, condition, :, meta['dim4'].index('side')][:-1])
+    
     # establish trialwise learning rates
-    if condition == 0:
-        alpha = alpha_plus * (rewarded == response) \
-              + alpha_minus * (rewarded != response) 
-    else:
-        alpha = alpha_plus * ((-1)*rewarded == response) \
-              + alpha_minus * ((-1)*rewarded != response) 
+    alpha = alpha_plus * (side == response) \
+          + alpha_minus * (side != response) 
 
-    for trial, rwd in enumerate(rewarded):
-        val[trial+1, 1] = val[trial, 1] \
-                        + alpha[trial] * ((rwd + 1)/2 - val[trial, 1])
-        val[trial+1, 0] = val[trial, 0] \
-                        + alpha[trial] * ((-rwd + 1)/2 - val[trial, 0])
+    for trial, sbci in enumerate(side_bci):
+        wbci[trial+1, 1] = wbci[trial, 1] \
+                        + alpha[trial] * ((sbci + 1)/2 - wbci[trial, 1])
+        wbci[trial+1, 0] = wbci[trial, 0] \
+                        + alpha[trial] * ((-sbci + 1)/2 - wbci[trial, 0])
     
-    return val
+    return wbci
 
-def estimate_regressors(beh, meta, subject, condition, val):
-    '''Calculate trial-wise regressors for chosen option.
-
-    Args:
-        beh (np.array): aggregated behavioral responses
-        meta (dict): description of beh array coding
-        subject (int): subject index
-        condition (int): task condition index
-        val (np.array): reflects algorithm trialwise beliefs about
-            probabilities that box will be chosen (rewarded / punished)
-
-    Returns (3-tuple):
-        anticip_pwin (np.arry): expected probability of choosing correct box
-        anticip_rew (np.arry): pascalian expected value
-        pred_err (np.array): prediction error
-    '''
-    rewarded = np.copy(beh[subject, condition, :, meta['dim4'].index('rwd')])
-    response = np.copy(beh[subject, condition, :, meta['dim4'].index('response')])
-    magn_both = np.hstack((
-        np.copy(beh[subject, condition, :, meta['dim4'].index('magn_left')])[:, np.newaxis],
-        np.copy(beh[subject, condition, :, meta['dim4'].index('magn_right')])[:, np.newaxis],
-    ))
-
-    response_mask = np.hstack((
-        response.reshape(-1, 1) == -1, 
-        response.reshape(-1, 1) == 1
-    ))
-
-    # Ensure correct val interpretation
-    anticip_val = np.sum(np.multiply(val, response_mask), axis=1) # bci
-    if condition == 1:
-        val = np.fliplr(val) # change bci interpretation to correct interpretation
-        rewarded *= (-1)
-    anticip_pwin = np.sum(np.multiply(val, response_mask), axis=1) # correct interpretation
-    
-    anticip_rew = np.sum(magn_both * response_mask, 1) * anticip_val
-    pred_err = (rewarded == response) - anticip_pwin
-
-    return anticip_pwin, anticip_rew, pred_err
-
-def estimate_utilities(beh, meta, subject, condition, gamma=1, delta=1):
+def estimate_util(beh, meta, subject, condition, gamma=1, delta=1):
     '''Implements function converting reward magnitude to experienced utility.
 
     Args:
@@ -153,8 +136,9 @@ def estimate_utilities(beh, meta, subject, condition, gamma=1, delta=1):
         delta: (float): risk aversion parameter
 
     Returns:
-        util (np.array): reflects algorithm trialwise estimates of utility
-            for both left and right boxes
+        np.array (n_trials x n_sides): 
+            reflects algorithm trialwise estimates of utility for both left and 
+            right boxes
     '''
     util = np.zeros((beh.shape[2], 2))
 
@@ -174,34 +158,35 @@ def estimate_utilities(beh, meta, subject, condition, gamma=1, delta=1):
 
     return util
 
-def estimate_choice_probability(val, util, kind='simple', theta=None):
+def estimate_choice_probability(wbci, util, kind='simple', beta=None):
     '''Implements softmax decision rule reflecting choice probabilities
 
     Args:
-        val (np.array): trialwise beliefs about probabilities that box will
+        wbci (np.array): trialwise beliefs about probabilities that side will
             be rewarded / punished
-        util (np.array): trialwise estimates of utility for both boxes
-        kind (str): either 'simple' or 'softmax' for two different models
-        theta (float): inverse temperature for softmax function
+        util (np.array): trialwise estimates of utility for both sides
+        kind (str): either 'simple' or 'softmax'
+        beta (float): inverse temperature for softmax function
 
     Returns:
-        p (np.array): trialwise choice probabilities
+        np.array (n_trials x n_sides): 
+            trialwise choice probabilities
     '''
 
     # Calculate expected value for both options
-    ev = np.multiply(util, val)
+    exvl = np.multiply(util, wbci)
 
     if kind == 'simple':
-        p = ev / np.sum(ev, axis=1)[:, np.newaxis]
-        if np.sum(ev) < 0:
-            p = np.fliplr(p)
+        prob = exvl / np.sum(exvl, axis=1)[:, np.newaxis]
+        if np.sum(exvl) < 0:
+            prob = np.fliplr(prob)
 
     elif kind == 'softmax':
-        p = np.exp(theta * ev) / np.sum(np.exp(theta * ev), axis=1)[:, np.newaxis]
+        prob = np.exp(beta * exvl) / np.sum(np.exp(beta * exvl), axis=1)[:, np.newaxis]
 
-    return p
+    return prob
 
-def g_square(beh, meta, subject, condition, p):
+def g_square(beh, meta, subject, condition, prob):
     '''Calculate badness-of-fit quality measure. G-square is inversely
     related to log likelyhood.
 
@@ -210,7 +195,7 @@ def g_square(beh, meta, subject, condition, p):
         meta (dict): description of beh array coding
         subject (int): subject index
         condition (int): task condition index
-        p (np.array): trialwise choice probabilities
+        prob (np.array): trialwise choice probabilities
 
     Returns:
         (float): g-square badness-of-fit
@@ -221,44 +206,98 @@ def g_square(beh, meta, subject, condition, p):
 
     for trial, response in enumerate(responses):
         if response == -1:
-            ll += np.log(p[trial, 0])
+            if prob[trial, 0] > 0: 
+                ll += np.log(prob[trial, 0])
+            else:
+                ll += np.log(np.finfo(float).eps)
         elif response == 1:
-            ll += np.log(p[trial, 1])
+            if prob[trial, 1] > 0:
+                ll += np.log(prob[trial, 1])
+            else:
+                ll += np.log(np.finfo(float).eps)
 
     return (-2) * ll
 
-### Behavioral Models #######################################################
+
+### Full Models ################################################################
 def model1(beh, meta, subject, condition, alpha):
     '''Simple one-parameter model with variable learning rate.'''
 
-    val = estimate_values(beh, meta, subject, condition, alpha)
-    util = estimate_utilities(beh, meta, subject, condition)
-    p = estimate_choice_probability(val, util, kind='simple')
+    wbci = estimate_wbci(beh, meta, subject, condition, alpha)
+    util = estimate_util(beh, meta, subject, condition)
+    prob = estimate_choice_probability(wbci, util, kind='simple')
 
-    return (val, util, p)
+    return (wbci, util, prob)
 
 
-def model2(beh, meta, subject, condition, alpha, theta):
+def model2(beh, meta, subject, condition, alpha, beta):
     '''Two-parameter model  with variable learning rate and inverse T.'''
 
-    val = estimate_values(beh, meta, subject, condition, alpha)
-    util = estimate_utilities(beh, meta, subject, condition)
-    p = estimate_choice_probability(val, util, kind='softmax', theta=theta)
+    wbci = estimate_wbci(beh, meta, subject, condition, alpha)
+    util = estimate_util(beh, meta, subject, condition)
+    prob = estimate_choice_probability(wbci, util, kind='softmax', beta=beta)
 
-    return (val, util, p)
+    return (wbci, util, prob)
 
-def model3(beh, meta, subject, condition, alpha, theta, gamma, delta):
+def model3(beh, meta, subject, condition, alpha, beta, gamma, delta):
     '''Four-parameter model.
 
     Args:
         alpha (float): learning rate
-        theta (float): inverse softmax temperature
+        beta (float): inverse softmax temperature
         gamma (float): loss aversion
         delta (float): risk aversion
     '''
 
-    val = estimate_values(beh, meta, subject, condition, alpha)
-    util = estimate_utilities(beh, meta, subject, condition, gamma, delta)
-    p = estimate_choice_probability(val, util, kind='softmax', theta=theta)
+    wbci = estimate_wbci(beh, meta, subject, condition, alpha)
+    util = estimate_util(beh, meta, subject, condition, gamma, delta)
+    prob = estimate_choice_probability(wbci, util, kind='softmax', beta=beta)
 
-    return (val, util, p)
+    return (wbci, util, prob)
+
+def estimate_modulation(beh, meta, subject, condition, wbci):
+    '''Calculate trial-wise hidden model variables for chosen option. 
+    These values are used to create fMRI model-based regressors.
+
+    Args:
+        beh (np.array): aggregated behavioral responses
+        meta (dict): description of beh array coding
+        subject (int): subject index
+        condition (int): task condition index
+        wbci (np.array): reflects algorithm trialwise beliefs about
+            probabilities that box will be chosen (rewarded / punished)
+
+    Returns (3-tuple):
+        wcor (np.arry): expected probability of choosing correct box
+        exvl (np.arry): pascalian expected value for chosen option
+        perr (np.array): prediction error during outcome
+    '''
+    magn = np.hstack((
+        np.copy(beh[subject, condition, :, meta['dim4'].index('magn_left')])[:, np.newaxis],
+        np.copy(beh[subject, condition, :, meta['dim4'].index('magn_right')])[:, np.newaxis],
+    ))
+    response = np.copy(beh[subject, condition, :, meta['dim4'].index('response')])
+    side_bci = np.copy(beh[subject, condition, :, meta['dim4'].index('side_bci')])
+    side = np.copy(beh[subject, condition, :, meta['dim4'].index('side')])
+
+    response_mask = np.hstack((
+        response.reshape(-1, 1) == -1, 
+        response.reshape(-1, 1) == 1
+    ))
+
+    # Expected probability for side for being correct
+    if condition == 1:
+        wcor = np.sum(np.fliplr(wbci) * response_mask, axis=1)    
+    else:
+        wcor = np.sum(wbci * response_mask, axis=1)
+
+    # Expected value for chosen option
+    exvl = np.sum(magn * response_mask, axis=1) * wcor
+
+    # Prediction error
+    perr = (side == response) - wcor
+
+    return wcor, exvl, perr
+
+
+

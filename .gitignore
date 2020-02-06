@@ -1,0 +1,5 @@
+*__pycache__*
+.trash
+.ipynb_checkpoints
+figures
+behavioral_analysis/matjags-dn
