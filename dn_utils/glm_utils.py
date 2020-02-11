@@ -18,7 +18,7 @@ class Regressor():
     handled both cases of unmodulated and modulated regressors.
     ''' 
     def __init__(self, name, frame_times, onset, 
-                 duration=None, modulation=False):
+                 duration=None, modulation=None):
         '''
         Args:
             name (str): Name of the regressor.
@@ -38,14 +38,13 @@ class Regressor():
         self._frame_times = frame_times.copy()
         self._n_events = len(onset)
         
-        if modulation is not False:
+        if modulation is not None:
             if modulation.shape != onset.shape:
                 raise ValueError(
                     'onset and modulation have to be the same shape, but '\
                     '{} and {} were passed'.format(modulation.shape, onset.shape)
                 )
-        else:
-            self._modulation = False
+
         self._modulation = modulation
         
         if duration is None:
@@ -74,29 +73,28 @@ class Regressor():
     
     def _create_dm_column(self):
         '''Create column of design matrix corresponding to regressor modulation.
-        
-        Args:
-
-                
+ 
         Returns: (pd.DataFrarme)
             Regressor time-course convolved with HRF.        
         '''
         events_dict = {
             'onset': self._onset,
             'duration': self._duration,
-            'trial_type': np.ones(self._n_events)
+            'trial_type': np.ones(self._n_events),
         } 
+        
+        if self._modulation is not None:
+            events_dict['modulation'] = self._modulation 
 
-        if self._modulation is not False:
-            events_dict['modulation'] = self._modulation
-
-        events = pd.DataFrame(events_dict        )
+        events = pd.DataFrame(events_dict)
         events.loc[:, "trial_type"] = self.name
         
-        if self._modulation is not False:
-            events['modulation'] -= events['modulation'].mean()
-        
-        dm = make_first_level_design_matrix(self._frame_times, events, drift_model=None)
+        dm = make_first_level_design_matrix(
+            self._frame_times, 
+            events, 
+            hrf_model='spm',
+            drift_model=None
+        )
         dm = dm.drop('constant', axis=1)
 
         return dm
@@ -166,4 +164,3 @@ def my_make_first_level_design_matrix(regressors: list, confounds):
         conditions[condition_name][list(dm.columns).index(condition_name)] = 1
 
     return (dm, conditions)    
-
