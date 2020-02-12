@@ -124,30 +124,28 @@ class Regressor():
         
         return rval[0,1]
 
-def my_make_first_level_design_matrix(regressors: list, confounds):
-    '''Turn arbitrary number of regressors and confound table int design matrix.
+def my_make_first_level_design_matrix(regressors: list):
+    '''Turn arbitrary number of regressors into first level design matrix.
+    
+    This function wraps make_first_level_design_matrix function from 
+    nistats.design_matrix module to create design matrix from list of Regressor
+    objects. Note that this design matrix lacks confounds regressors. If you
+    want to include confounds, pass it to the FirstLevelModel.fit method.
 
     Args:
         regressors: list of Regressor objects
-        confounds: pd.DataFrame with confounds
-
-    Note:
-        Index of confounds should reflect frame times in secods and should match
-        regressors _frame_times.
 
     Returns (2-tuple):
         Final GLM design matrix as DataFrame and dictionary with condition
         contrast vectors for all specifified regressors.
     '''
+    # Filter empty regressors (i.e. miss regressor for subjects with no misses)
     regressors = [r for r in regressors if r.is_empty == False]
-    
-    add_regs = pd.concat(
-        [r.dm_column for r in regressors] + [confounds], axis=1, sort=False
-    )
-    add_reg_names = [r.name for r in regressors] + list(confounds.columns)
 
-    for ft1, ft2 in combinations([r._frame_times for r in regressors] +
-                                 [np.array(confounds.index)], 2):
+    add_regs = pd.concat([r.dm_column for r in regressors], axis=1, sort=False)
+    add_reg_names = [r.name for r in regressors]
+
+    for ft1, ft2 in combinations([r._frame_times for r in regressors], 2):
         if not np.array_equal(ft1, ft2):
             raise ValueError(f'regressors frame_times not matching')
 
@@ -163,4 +161,4 @@ def my_make_first_level_design_matrix(regressors: list, confounds):
     for condition_name in conditions:
         conditions[condition_name][list(dm.columns).index(condition_name)] = 1
 
-    return (dm, conditions)    
+    return (dm, conditions)   
