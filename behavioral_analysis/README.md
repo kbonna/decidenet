@@ -7,7 +7,8 @@ Behavioral data is stored in two separate files `behavioral_data_clean_all.npy` 
 2. Corresponding metadata dictionary is called as `meta` variable in the code. 
 
 ## Fields
-Aggregated behavioral data contains **all task information, all behavioral responses  / recordings and timing of all scanner events**.  Multidimensional array `beh` aggregates data for subjects, conditions, trials for different events. Shape of the array is $N_{subjects} \times N_{conditions} \times N_{trials} \times N_{variables}$. 
+Aggregated behavioral data contains **all task information, all behavioral responses  / recordings and timing of all scanner events**.  Multidimensional array `beh` aggregates data for subjects, conditions, trials for different events. Shape of the array is <img src="https://render.githubusercontent.com/render/math?math=$N_{subjects} \times N_{conditions} \times N_{trials} \times N_{variables}$">.
+
 ### Task structure variables
 | variable name | code | values |
 |--|--|--|
@@ -67,7 +68,7 @@ Note that learning rates can be represented either as separate vectors or arrays
 | Reward utility | `util` / `util_l` and `util_r` | u |
 | Choice probability | `prob` / `prob_l` and `prob_r` | P |
 
-Whenever `l` and `r` suffixes are not used, **array representation** of tracked variables is assumed. In array representation $N_{trials} \times N_{sides}$ array is representing variable state across task time course for both sides simultaneously. 
+Whenever `l` and `r` suffixes are not used, **array representation** of tracked variables is assumed. In array representation <img src="https://render.githubusercontent.com/render/math?math=$N_{trials} \times N_{sides}$"> array is representing variable state across task time course for both sides simultaneously. 
 
 ## Directory structure
 
