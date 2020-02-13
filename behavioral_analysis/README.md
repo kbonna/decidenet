@@ -67,6 +67,7 @@ Note that learning rates can be represented either as separate vectors or arrays
 | Reward magnitude | `magn` / `magn_l` and `magn_r` | x |
 | Reward utility | `util` / `util_l` and `util_r` | u |
 | Choice probability | `prob` / `prob_l` and `prob_r` | P |
+| Prediction error (probabilistic) | `perr` / `perr_l` and `perr_r` | Δ |
 
 Whenever `l` and `r` suffixes are not used, **array representation** of tracked variables is assumed. In array representation <img src="https://render.githubusercontent.com/render/math?math=$N_{trials} \times N_{sides}$"> array is representing variable state across task time course for both sides simultaneously. 
 
