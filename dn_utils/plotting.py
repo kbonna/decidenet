@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import itertools
+from nilearn import plotting
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from .glm_utils import Regressor
 
@@ -94,3 +95,37 @@ def plot_correlation_between_regressors(regressors, figsize=(7, 7)) -> None:
             color = 'w'
         text = ax.text(j, i, format(corr_between_regressors[i, j], '.2f'), 
                        ha="center", va="center", color=color)
+        
+def plot_stat_maps_grid(stat_maps, labels=None, threshold=None):
+    '''Plots grid of statical maps.
+    
+    Args:
+        stat_maps (list): List of nibabel.nifti1.Nifti1Image first level output statistical images.
+        labels (list, optional): List of titles for grid images. Defaults to integers (1, 2, 3...)
+        threshold (float, optional): Threshold for plotting. If nothing is passed, image will not be
+            thresholded.    
+    '''
+    n = len(stat_maps)
+    n_rows = (n - 1) // 4 + 1
+    
+    if labels is None:
+        labels = [str(i) for i in range(n)]
+    
+    fig, ax = plt.subplots(
+        nrows=n_rows, ncols=4, 
+        facecolor='k', figsize=(15, 4 * n_rows))
+
+    for cidx, stat_map in enumerate(stat_maps):
+        if n_rows == 1:
+            axes = ax[cidx]
+        else:
+            axes = ax[int(cidx / 4)][int(cidx % 4)]
+        plotting.plot_glass_brain(
+            stat_map, 
+            colorbar=False, 
+            threshold=threshold,
+            title=labels[cidx],
+            axes=axes,
+            plot_abs=False,
+            black_bg=True,
+            display_mode='z')
