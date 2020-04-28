@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from itertools import combinations
 from nistats.design_matrix import make_first_level_design_matrix
+from nistats import hemodynamic_models
 
 class Regressor():
     '''Implements representation of the single GLM regressor.
@@ -162,3 +163,41 @@ def my_make_first_level_design_matrix(regressors: list):
         conditions[condition_name][list(dm.columns).index(condition_name)] = 1
 
     return (dm, conditions)   
+
+def convolve(signal, t_r=2, oversampling=50, hrf_model='spm'):
+    '''Convolve signal with hemodynamic response function.
+    
+    Performs signal convolution with requested hrf model. This function wraps around nistats 
+    compute_regressor function usually used for creating task-based regressors. The trick is to 
+    define neural regressor as a sequence of equally spaced (with the gap of 1TR) and modulated
+    'task events'. Event amplitude modulation corresponds to neural signal amplitude at a given 
+    timepoint.
+    
+    Args:
+        signal (iterable):
+            Neural signal.
+        t_r (float):
+            Repetition time in seconds.
+        oversampling (int, optional):
+            Convolution upsampling rate.
+        hrf_model (str, optional):
+            Hemodynamic response function type. See the documentation of compute regressor function 
+            from nistats.hemodynamic_models for more details.
+            
+    Returns:
+        Convolved neural signal in BOLD space.
+    '''
+    n_volumes = len(signal)
+    frame_times = np.arange(0, n_volumes * t_r, t_r)
+    onsets = np.zeros((3, n_volumes))
+    for vol, amplitude in enumerate(signal):
+        onsets[:, vol] = (vol * t_r, 0, amplitude)
+
+    signal_bold = hemodynamic_models.compute_regressor(
+        onsets,
+        hrf_model=hrf_model,                              
+        frame_times=frame_times,
+        oversampling=oversampling,     
+        fir_delays=None)[0].ravel()
+
+    return signal_bold
