@@ -25,10 +25,10 @@ for (j in 1:nConditions){
     wcor_r_pdci_tmp[j, 1] = .5
     wcor_l_pdci[j, 1] = .5
     wcor_r_pdci[j, 1] = .5   
-    util_l_pdci[j, 1] = ifelse(j==1, wcor_l_pdci[j, 1] * xl[j, 1], (1-wcor_l_pdci[j, 1]) * xl[j, 1])        
-    util_r_pdci[j, 1] = ifelse(j==1, wcor_r_pdci[j, 1] * xr[j, 1], (1-wcor_r_pdci[j, 1]) * xr[j, 1])         
-    prob[j, 1] = (1) / (1 + exp(beta_pdci * (util_l_pdci[j, 1] - util_r_pdci[j, 1])))   
-    respFictPDCI[j, 1] ~ dbern((1) / (1 + exp(beta_pdci * (util_l_pdci[j, 1] - util_r_pdci[j, 1])))) # fictitious response
+    exvl_l_pdci[j, 1] = ifelse(j==1, wcor_l_pdci[j, 1] * magnl[j, 1], (1-wcor_l_pdci[j, 1]) * magnl[j, 1])        
+    exvl_r_pdci[j, 1] = ifelse(j==1, wcor_r_pdci[j, 1] * magnr[j, 1], (1-wcor_r_pdci[j, 1]) * magnr[j, 1])         
+    prob[j, 1] = (1) / (1 + exp(beta_pdci * (exvl_l_pdci[j, 1] - exvl_r_pdci[j, 1])))   
+    respFictPDCI[j, 1] ~ dbern((1) / (1 + exp(beta_pdci * (exvl_l_pdci[j, 1] - exvl_r_pdci[j, 1])))) # fictitious response
 
     # Generate response
     resp[j, 1] ~ dbern(prob[j, 1])
@@ -52,10 +52,10 @@ for (j in 1:nConditions){
 
         # Recalculate utilities
         #PDCI
-        util_l_pdci[j, t] = ifelse(j==1, wcor_l_pdci[j, t] * xl[j, t], (1-wcor_l_pdci[j, t]) * xl[j, t])        
-        util_r_pdci[j, t] = ifelse(j==1, wcor_r_pdci[j, t] * xr[j, t], (1-wcor_r_pdci[j, t]) * xr[j, t])            
-        prob[j, t] = (1) / (1 + exp(beta_pdci * (util_l_pdci[j, t] - util_r_pdci[j, t]))) 
-        respFictPDCI[j, t] ~ dbern(max(0.000001, min(0.999999, (1) / (1 + exp(beta_pdci * (util_l_pdci[j, t] - util_r_pdci[j, t]))))))   
+        exvl_l_pdci[j, t] = ifelse(j==1, wcor_l_pdci[j, t] * magnl[j, t], (1-wcor_l_pdci[j, t]) * magnl[j, t])        
+        exvl_r_pdci[j, t] = ifelse(j==1, wcor_r_pdci[j, t] * magnr[j, t], (1-wcor_r_pdci[j, t]) * magnr[j, t])            
+        prob[j, t] = (1) / (1 + exp(beta_pdci * (exvl_l_pdci[j, t] - exvl_r_pdci[j, t]))) 
+        respFictPDCI[j, t] ~ dbern(max(0.000001, min(0.999999, (1) / (1 + exp(beta_pdci * (exvl_l_pdci[j, t] - exvl_r_pdci[j, t]))))))   
 
         # Choose submodel & generate response
         resp[j, t] ~ dbern(max(0.000001, min(0.999999, prob[j, t])))    

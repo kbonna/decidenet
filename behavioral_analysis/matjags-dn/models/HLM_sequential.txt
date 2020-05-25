@@ -9,7 +9,16 @@ model {
 #
 #   Implemented behavioral models:
 #
-#   ...
+#   PICI (prediction error independent, condition independent): 
+#       single learning rate per subject 
+#   PICD (prediction error independent, condition dependent): 
+#       two separate learning rates for reward and punishment condition
+#   PDCI (prediction error dependent, condition independent): 
+#       two separate learning rates for positive and negative prediction 
+#       errors
+#   PDCD (prediction error dependent, condition dependent): 
+#       four separate learning rates depending on both condtion and 
+#       predticion error sign
 #   
 #   Loop variables:
 #
@@ -37,16 +46,16 @@ for (i in 1:nSubjects){
         #PICI
         wcor_l_pici[i, j, 1] = .5
         wcor_r_pici[i, j, 1] = .5
-        exvl_l_pici[i, j, 1] = ifelse(j==1, wcor_l_pici[i, j, 1] * magn_l[i, j, 1], (1-wcor_l_pici[i, j, 1]) * magn_l[i, j, 1])        
-        exvl_r_pici[i, j, 1] = ifelse(j==1, wcor_r_pici[i, j, 1] * magn_r[i, j, 1], (1-wcor_r_pici[i, j, 1]) * magn_r[i, j, 1])           
+        exvl_l_pici[i, j, 1] = ifelse(j==1, wcor_l_pici[i, j, 1] * magnl[i, j, 1], (1-wcor_l_pici[i, j, 1]) * magnl[i, j, 1])        
+        exvl_r_pici[i, j, 1] = ifelse(j==1, wcor_r_pici[i, j, 1] * magnr[i, j, 1], (1-wcor_r_pici[i, j, 1]) * magnr[i, j, 1])           
         theta[i, j, 1, 1] = (1) / (1 + exp(beta_pici[i] * (exvl_l_pici[i, j, 1] - exvl_r_pici[i, j, 1])))         
         theta[i, j, 1, 5] = (1) / (1 + exp(beta_pici[i] * (exvl_l_pici[i, j, 1] - exvl_r_pici[i, j, 1])))         
 
         #PICD
         wcor_l_picd[i, j, 1] = .5
         wcor_r_picd[i, j, 1] = .5
-        exvl_l_picd[i, j, 1] = ifelse(j==1, wcor_l_picd[i, j, 1] * magn_l[i, j, 1], (1-wcor_l_picd[i, j, 1]) * magn_l[i, j, 1])        
-        exvl_r_picd[i, j, 1] = ifelse(j==1, wcor_r_picd[i, j, 1] * magn_r[i, j, 1], (1-wcor_r_picd[i, j, 1]) * magn_r[i, j, 1])           
+        exvl_l_picd[i, j, 1] = ifelse(j==1, wcor_l_picd[i, j, 1] * magnl[i, j, 1], (1-wcor_l_picd[i, j, 1]) * magnl[i, j, 1])        
+        exvl_r_picd[i, j, 1] = ifelse(j==1, wcor_r_picd[i, j, 1] * magnr[i, j, 1], (1-wcor_r_picd[i, j, 1]) * magnr[i, j, 1])           
         theta[i, j, 1, 2] = (1) / (1 + exp(beta_picd[i] * (exvl_l_picd[i, j, 1] - exvl_r_picd[i, j, 1])))         
         theta[i, j, 1, 6] = (1) / (1 + exp(beta_picd[i] * (exvl_l_picd[i, j, 1] - exvl_r_picd[i, j, 1])))         
 
@@ -55,8 +64,8 @@ for (i in 1:nSubjects){
         wcor_r_tmp_pdci[i, j, 1] = .5
         wcor_l_pdci[i, j, 1] = .5
         wcor_r_pdci[i, j, 1] = .5   
-        exvl_l_pdci[i, j, 1] = ifelse(j==1, wcor_l_pdci[i, j, 1] * magn_l[i, j, 1], (1-wcor_l_pdci[i, j, 1]) * magn_l[i, j, 1])        
-        exvl_r_pdci[i, j, 1] = ifelse(j==1, wcor_r_pdci[i, j, 1] * magn_r[i, j, 1], (1-wcor_r_pdci[i, j, 1]) * magn_r[i, j, 1])         
+        exvl_l_pdci[i, j, 1] = ifelse(j==1, wcor_l_pdci[i, j, 1] * magnl[i, j, 1], (1-wcor_l_pdci[i, j, 1]) * magnl[i, j, 1])        
+        exvl_r_pdci[i, j, 1] = ifelse(j==1, wcor_r_pdci[i, j, 1] * magnr[i, j, 1], (1-wcor_r_pdci[i, j, 1]) * magnr[i, j, 1])         
         theta[i, j, 1, 3] = (1) / (1 + exp(beta_pdci[i] * (exvl_l_pdci[i, j, 1] - exvl_r_pdci[i, j, 1])))   
         theta[i, j, 1, 7] = (1) / (1 + exp(beta_pdci[i] * (exvl_l_pdci[i, j, 1] - exvl_r_pdci[i, j, 1])))   
         respFictPDCI[i, j, 1] ~ dbern((1) / (1 + exp(beta_pdci[i] * (exvl_l_pdci[i, j, 1] - exvl_r_pdci[i, j, 1])))) # fictitious response
@@ -66,8 +75,8 @@ for (i in 1:nSubjects){
         wcor_r_tmp_pdcd[i, j, 1] = .5
         wcor_l_pdcd[i, j, 1] = .5
         wcor_r_pdcd[i, j, 1] = .5   
-        exvl_l_pdcd[i, j, 1] = ifelse(j==1, wcor_l_pdcd[i, j, 1] * magn_l[i, j, 1], (1-wcor_l_pdcd[i, j, 1]) * magn_l[i, j, 1])        
-        exvl_r_pdcd[i, j, 1] = ifelse(j==1, wcor_r_pdcd[i, j, 1] * magn_r[i, j, 1], (1-wcor_r_pdcd[i, j, 1]) * magn_r[i, j, 1])         
+        exvl_l_pdcd[i, j, 1] = ifelse(j==1, wcor_l_pdcd[i, j, 1] * magnl[i, j, 1], (1-wcor_l_pdcd[i, j, 1]) * magnl[i, j, 1])        
+        exvl_r_pdcd[i, j, 1] = ifelse(j==1, wcor_r_pdcd[i, j, 1] * magnr[i, j, 1], (1-wcor_r_pdcd[i, j, 1]) * magnr[i, j, 1])         
         theta[i, j, 1, 4] = (1) / (1 + exp(beta_pdcd[i] * (exvl_l_pdcd[i, j, 1] - exvl_r_pdcd[i, j, 1])))   
         theta[i, j, 1, 8] = (1) / (1 + exp(beta_pdcd[i] * (exvl_l_pdcd[i, j, 1] - exvl_r_pdcd[i, j, 1])))   
         respFictPDCD[i, j, 1] ~ dbern((1) / (1 + exp(beta_pdcd[i] * (exvl_l_pdcd[i, j, 1] - exvl_r_pdcd[i, j, 1])))) # fictitious response
@@ -126,27 +135,27 @@ for (i in 1:nSubjects){
             # Recalculate utilities
             
             #PICI
-            exvl_l_pici[i, j, t] = ifelse(j==1, wcor_l_pici[i, j, t] * magn_l[i, j, t], (1-wcor_l_pici[i, j, t]) * magn_l[i, j, t])        
-            exvl_r_pici[i, j, t] = ifelse(j==1, wcor_r_pici[i, j, t] * magn_r[i, j, t], (1-wcor_r_pici[i, j, t]) * magn_r[i, j, t])           
+            exvl_l_pici[i, j, t] = ifelse(j==1, wcor_l_pici[i, j, t] * magnl[i, j, t], (1-wcor_l_pici[i, j, t]) * magnl[i, j, t])        
+            exvl_r_pici[i, j, t] = ifelse(j==1, wcor_r_pici[i, j, t] * magnr[i, j, t], (1-wcor_r_pici[i, j, t]) * magnr[i, j, t])           
             theta[i, j, t, 1] = (1) / (1 + exp(beta_pici[i] * (exvl_l_pici[i, j, t] - exvl_r_pici[i, j, t]))) 
             theta[i, j, t, 5] = (1) / (1 + exp(beta_pici[i] * (exvl_l_pici[i, j, t] - exvl_r_pici[i, j, t]))) 
 
             #PICD
-            exvl_l_picd[i, j, t] = ifelse(j==1, wcor_l_picd[i, j, t] * magn_l[i, j, t], (1-wcor_l_picd[i, j, t]) * magn_l[i, j, t])        
-            exvl_r_picd[i, j, t] = ifelse(j==1, wcor_r_picd[i, j, t] * magn_r[i, j, t], (1-wcor_r_picd[i, j, t]) * magn_r[i, j, t])           
+            exvl_l_picd[i, j, t] = ifelse(j==1, wcor_l_picd[i, j, t] * magnl[i, j, t], (1-wcor_l_picd[i, j, t]) * magnl[i, j, t])        
+            exvl_r_picd[i, j, t] = ifelse(j==1, wcor_r_picd[i, j, t] * magnr[i, j, t], (1-wcor_r_picd[i, j, t]) * magnr[i, j, t])           
             theta[i, j, t, 2] = (1) / (1 + exp(beta_picd[i] * (exvl_l_picd[i, j, t] - exvl_r_picd[i, j, t]))) 
             theta[i, j, t, 6] = (1) / (1 + exp(beta_picd[i] * (exvl_l_picd[i, j, t] - exvl_r_picd[i, j, t]))) 
            
             #PDCI
-            exvl_l_pdci[i, j, t] = ifelse(j==1, wcor_l_pdci[i, j, t] * magn_l[i, j, t], (1-wcor_l_pdci[i, j, t]) * magn_l[i, j, t])        
-            exvl_r_pdci[i, j, t] = ifelse(j==1, wcor_r_pdci[i, j, t] * magn_r[i, j, t], (1-wcor_r_pdci[i, j, t]) * magn_r[i, j, t])            
+            exvl_l_pdci[i, j, t] = ifelse(j==1, wcor_l_pdci[i, j, t] * magnl[i, j, t], (1-wcor_l_pdci[i, j, t]) * magnl[i, j, t])        
+            exvl_r_pdci[i, j, t] = ifelse(j==1, wcor_r_pdci[i, j, t] * magnr[i, j, t], (1-wcor_r_pdci[i, j, t]) * magnr[i, j, t])            
             theta[i, j, t, 3] = (1) / (1 + exp(beta_pdci[i] * (exvl_l_pdci[i, j, t] - exvl_r_pdci[i, j, t]))) 
             theta[i, j, t, 7] = (1) / (1 + exp(beta_pdci[i] * (exvl_l_pdci[i, j, t] - exvl_r_pdci[i, j, t]))) 
             respFictPDCI[i, j, t] ~ dbern(max(0.000001, min(0.999999, (1) / (1 + exp(beta_pdci[i] * (exvl_l_pdci[i, j, t] - exvl_r_pdci[i, j, t]))))))   
 
             #PDCD
-            exvl_l_pdcd[i, j, t] = ifelse(j==1, wcor_l_pdcd[i, j, t] * magn_l[i, j, t], (1-wcor_l_pdcd[i, j, t]) * magn_l[i, j, t])        
-            exvl_r_pdcd[i, j, t] = ifelse(j==1, wcor_r_pdcd[i, j, t] * magn_r[i, j, t], (1-wcor_r_pdcd[i, j, t]) * magn_r[i, j, t])            
+            exvl_l_pdcd[i, j, t] = ifelse(j==1, wcor_l_pdcd[i, j, t] * magnl[i, j, t], (1-wcor_l_pdcd[i, j, t]) * magnl[i, j, t])        
+            exvl_r_pdcd[i, j, t] = ifelse(j==1, wcor_r_pdcd[i, j, t] * magnr[i, j, t], (1-wcor_r_pdcd[i, j, t]) * magnr[i, j, t])            
             theta[i, j, t, 4] = (1) / (1 + exp(beta_pdcd[i] * (exvl_l_pdcd[i, j, t] - exvl_r_pdcd[i, j, t]))) 
             theta[i, j, t, 8] = (1) / (1 + exp(beta_pdcd[i] * (exvl_l_pdcd[i, j, t] - exvl_r_pdcd[i, j, t]))) 
             respFictPDCD[i, j, t] ~ dbern(max(0.000001, min(0.999999, (1) / (1 + exp(beta_pdcd[i] * (exvl_l_pdcd[i, j, t] - exvl_r_pdcd[i, j, t]))))))   

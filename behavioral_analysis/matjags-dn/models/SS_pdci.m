@@ -3,19 +3,21 @@ clear; clc;
 
 %% Setup
 % task data location
-root = '/home/kmb/Desktop/Neuroscience/Projects/BONNA_decide_net/data/main_fmri_study/sourcedata/behavioral/';
-root_resp_artif = '/home/kmb/Desktop/Neuroscience/Projects/BONNA_decide_net/code/behavioral_analysis/matjags-dn/data/parameter_recovery_synthetic_data/';
+path_root = getenv('DECIDENET_PATH');
+path_beh = fullfile(path_root, 'data/main_fmri_study/sourcedata/behavioral');
+path_out = fullfile(path_root, 'data/main_fmri_study/derivatives/jags');
+path_resp_artif = fullfile(path_out, 'parameter_recovery_synthetic_data/');
 fname_beh = 'behavioral_data_clean_all.mat';
 fname_meta = 'behavioral_data_clean_all.json';
-   
+
 % load behavioral and metadata
-load(strcat(root, fname_beh));
-fid = fopen(strcat(root, fname_meta)); 
+load(fullfile(path_beh, fname_beh));
+fid = fopen(fullfile(path_beh, fname_meta)); 
 raw = fread(fid, inf); 
 str = char(raw'); 
 fclose(fid); 
 meta = jsondecode(str);
-clearvars -except beh meta root_resp_artif
+clearvars -except beh meta path_resp_artif
 
 nSubjects = numel(meta.dim1);
 nConditions = numel(meta.dim2);
@@ -71,13 +73,13 @@ for ap = 1 : 21
 
             % artificial response data location
             fname_resp_artif = strcat( ...
-                root_resp_artif, ...
+                path_resp_artif, ...
                 strcat('response_synthetic_sub-', meta.dim1{s}, '.mat'));
             load(fname_resp_artif);
 
             % pool task data & synthetic response data
-            xl = squeeze(beh(s, :, :, strcmp(meta.dim4, 'magn_left')));     % reward magnitude for left box
-            xr = squeeze(beh(s, :, :, strcmp(meta.dim4, 'magn_right')));    % reward magnitude for right box
+            magn_l = squeeze(beh(s, :, :, strcmp(meta.dim4, 'magn_left'))); % reward magnitude for left box
+            magn_r = squeeze(beh(s, :, :, strcmp(meta.dim4, 'magn_right')));% reward magnitude for right box
             side = squeeze(beh(s, :, :, strcmp(meta.dim4, 'side')));        % correct side
             resp = squeeze(response_synthetic(ap, am, bt, :, :));           % synthetic response
 
@@ -88,8 +90,8 @@ for ap = 1 : 21
 
             % Assign MATLAB variables to the observed JAGS nodes
             datastruct = struct(...
-                'xl', xl, ...
-                'xr', xr, ...
+                'magnl', magn_l, ...
+                'magnr', magn_r, ...
                 'side', side, ...
                 'resp', resp, ...
                 'nConditions', nConditions, ...

@@ -2,13 +2,14 @@ clear; clc;
 
 %% Load and process experiment data
 % data location
-root = '/home/kmb/Desktop/Neuroscience/Projects/BONNA_decide_net/data/main_fmri_study/sourcedata/behavioral/';
+path_root = getenv('DECIDENET_PATH');
+path_beh = fullfile(path_root, 'data/main_fmri_study/sourcedata/behavioral');
 fname_beh = 'behavioral_data_clean_all.mat';
 fname_meta = 'behavioral_data_clean_all.json';
 
 % load behavioral and metadata
-load(strcat(root, fname_beh));
-fid = fopen(strcat(root, fname_meta)); 
+load(fullfile(path_beh, fname_beh));
+fid = fopen(fullfile(path_beh, fname_meta)); 
 raw = fread(fid, inf); 
 str = char(raw'); 
 fclose(fid); 
@@ -16,30 +17,32 @@ meta = jsondecode(str);
 clearvars -except beh meta
 
 % split relevant data 
-xa = beh(:, :, :, strcmp(meta.dim4, 'magn_left'));  % reward magnitude for left box
-xb = beh(:, :, :, strcmp(meta.dim4, 'magn_right')); % reward magnitude for right box
-resp = beh(:, :, :, strcmp(meta.dim4, 'response')); % chosen side
-rwd = beh(:, :, :, strcmp(meta.dim4, 'rwd'));       % rewarded / punished side (bci)
+magn_l = beh(:, :, :, strcmp(meta.dim4, 'magn_left'));  % reward magnitude for left box
+magn_r = beh(:, :, :, strcmp(meta.dim4, 'magn_right')); % reward magnitude for right box
+resp = beh(:, :, :, strcmp(meta.dim4, 'response'));     % chosen side
+side_bci = beh(:, :, :, strcmp(meta.dim4, 'side_bci')); % rewarded / punished side (bci)
 
 nSubjects = numel(meta.dim1);
 nConditions = numel(meta.dim2);
 nTrials = numel(meta.dim3);
 nPredErrSign = 2;
-nModels = 2;                    
-resp(resp == 0) = NaN;                              % set missing values to NaNs
-resp = (resp + 1) / 2;                              % 0: left box; 1: right box; NaN: miss
-rwd  = (rwd + 1) / 2;                               % 0: left box; 1: right box (bci)  
-rwdwin = rwd;                                      
-rwdwin(:, 2, :) = 1 - rwdwin(:, 2, :);              % convert from being chosen to favor interpretation
+nModels = 4;                    
+
+% Change coding from {-1, 0, 1} to {0, NaN, 1}
+resp(resp == 0) = NaN;              % set missing values to NaNs
+resp = (resp + 1) / 2;              % 0: left box; 1: right box; NaN: miss
+side_bci  = (side_bci + 1) / 2;     % 0: left box; 1: right box (bci)  
+side = side_bci;                                      
+side(:, 2, :) = 1 - side(:, 2, :);  % convert from being chosen to favor interpretation
 
 %% JAGS Setup
 % Parameters
 fname_model = fullfile(pwd, strcat(mfilename, '.txt'));
-doparallel = 1;                                     % parallelization flag
-thinning = 1;                                       % thinning parameter
+doparallel = 1;                     % parallelization flag
+thinning = 1;                       % thinning parameter
 nChains = 4;                                        
 nBurnin = 1000;
-nSamples = 4000;
+nSamples = 5000;
 
 % Initialize Markov chain values
 for i=1:nChains
@@ -48,12 +51,13 @@ for i=1:nChains
 end
 
 % Assign MATLAB variables to the observed JAGS nodes
-%resp(resp<Inf) = NaN;
-%resp(1)=1;
+% Uncomment lines below to run model "diconnected" with the data
+% resp(resp<Inf) = NaN;
+% resp(1)=1;
 datastruct = struct(...
-    'xa', xa, ...
-    'xb', xb, ...
-    'rwdwin', rwdwin, ...
+    'magnl', magn_l, ...
+    'magnr', magn_r, ...
+    'side', side, ...
     'resp', resp, ...
     'nSubjects', nSubjects, ...
     'nConditions', nConditions, ...
@@ -63,12 +67,15 @@ datastruct = struct(...
 
 monitorparams = {...
     'z', ...
-    'a_alpha_pd', 'b_alpha_pd', 'mu_beta_pd', 'sigma_beta_pd', ...
-    'alpha_pd', 'beta_pd', 'xi_alpha_pd', 'theta_pd', ...
+    'a_alpha_pici', 'b_alpha_pici', 'mu_beta_pici', 'sigma_beta_pici', ...
+    'alpha_pici', 'beta_pici', ...
+    'a_alpha_picd', 'b_alpha_picd', 'mu_beta_picd', 'sigma_beta_picd', ...
+    'alpha_picd', 'beta_picd', ...
+    'a_alpha_pdci', 'b_alpha_pdci', 'mu_beta_pdci', 'sigma_beta_pdci', ...
+    'alpha_pdci', 'beta_pdci', ...
+    'a_alpha_pdcd', 'b_alpha_pdcd', 'mu_beta_pdcd', 'sigma_beta_pdcd', ...
+    'alpha_pdcd', 'beta_pdcd', ...
     };
-    %'a_alpha_pi', 'b_alpha_pi', 'mu_beta_pi', 'sigma_beta_pi', ...
-    %'alpha_pi', 'beta_pi', 'xi_alpha_pi', 'theta_pi', ...
-
 
 %% RUN JAGS
 fprintf('Running JAGS...\n');
@@ -83,7 +90,7 @@ tic
     'nsamples', nSamples, ...           % Number of samples to extract
     'thin', thinning, ...               % Thinning parameter
     'monitorparams', monitorparams, ... % List of latent variables to monitor
-    'savejagsoutput', 0 , ...           % Save command line output produced by JAGS?
+    'savejagsoutput', 1 , ...           % Save command line output produced by JAGS?
     'verbosity', 2 , ...                % 0=do not produce any output; 1=minimal text output; 2=maximum text output
     'cleanup', 1 );                     % clean up of temporary files?
 toc
