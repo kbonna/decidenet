@@ -1,11 +1,12 @@
+% Bayesian model used for parameter recovery simulation
 clear; clc;
 
 %% Setup
 % task data location
 root = '/home/kmb/Desktop/Neuroscience/Projects/BONNA_decide_net/data/main_fmri_study/sourcedata/behavioral/';
 root_resp_artif = '/home/kmb/Desktop/Neuroscience/Projects/BONNA_decide_net/code/behavioral_analysis/matjags-dn/data/parameter_recovery_synthetic_data/';
-fname_beh = 'behavioral_data_clean_all_REF.mat';
-fname_meta = 'behavioral_data_clean_all_REF.json';
+fname_beh = 'behavioral_data_clean_all.mat';
+fname_meta = 'behavioral_data_clean_all.json';
    
 % load behavioral and metadata
 load(strcat(root, fname_beh));
