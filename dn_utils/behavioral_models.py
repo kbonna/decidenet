@@ -22,7 +22,7 @@ def load_behavioral_data(path: str, verbose=True) -> tuple:
     """
     import os
     
-    beh_path = os.path.join(path, "behavioral_data_clean_all_REF.npy")
+    beh_path = os.path.join(path, "behavioral_data_clean_all.npy")
     beh_meta_path = beh_path.replace("npy", "json")
     
     beh = np.load(beh_path)

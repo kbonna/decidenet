@@ -129,3 +129,99 @@ def plot_stat_maps_grid(stat_maps, labels=None, threshold=None):
             plot_abs=False,
             black_bg=True,
             display_mode='z')
+        
+def plot_z_convergence(rhat_z: np.array) -> None:
+    '''Plots r-hat barplot for indicator variable'''
+    
+    rhat_thr = 1.1
+    n_subjects = np.size(rhat_z)
+
+    fig, ax = plt.subplots(ncols=1, nrows=1, facecolor='w', figsize=(20, 4))
+    b = ax.bar(
+        range(n_subjects), 
+        rhat_z,
+        color=[.3, .3, .3]
+    )
+
+    for rect in b:
+        if rect.get_height() > rhat_thr:
+            rect.set_color([1, .3, .3])
+    
+    ax.set_title('Model indicator variable $z_i$')
+    
+    ax.set_xlim((-1, n_subjects))
+    ax.set_xlabel('Subjects')
+    ax.set_xticks(range(n_subjects))
+    ax.set_xticklabels([f'm{sub:02}' for sub in range(2, n_subjects+2)],
+                      rotation=-45);
+
+    ax.set_ylim((1, 1.4))
+    ax.set_ylabel(r'$\hat{r}$', rotation=0)
+
+    ax.plot(ax.get_xlim(), (rhat_thr, rhat_thr), color='r')
+    
+    plt.tight_layout()
+    plt.savefig('pygures/convergence.png')
+    
+def gen_logbf_barplot(bf, model_names, outpath=None, cmap_name='bone'):
+    """Create barplots for subjectwise model comparison using log-scale.
+
+    Args:
+        bf: 
+            bayes factor vector of size n_subjects
+        modelname: 
+            two-element list of modelnames
+        outpath (optional):
+            path specification for saving figure
+        cmap_name: 
+            name of matplotlib colormap used to discriminate evidence levels 
+    """
+    logbf = np.log10(bf)
+    
+    fig, ax = plt.subplots(nrows=1, ncols=1, facecolor='w', figsize=(20, 5))
+    
+    b = ax.bar(range(n_subjects), logbf)
+
+    cmap = cm.get_cmap(cmap_name)
+    color = {
+        'extreme': cmap(0),
+        'vstrong': cmap(1/5),
+        'strong': cmap(2/5),  
+        'moderate': cmap(3/5),
+        'anecdotal': cmap(4/5),
+    }
+    
+    for rect in b:
+        if np.abs(rect.get_height()) < np.log10(3):
+            rect.set_color(color['anecdotal'])
+        elif np.abs(rect.get_height()) < np.log10(10):
+            rect.set_color(color['moderate'])
+        elif np.abs(rect.get_height()) < np.log10(30):
+            rect.set_color(color['strong'])
+        elif np.abs(rect.get_height()) < np.log10(100):
+            rect.set_color(color['vstrong'])
+        else:
+            rect.set_color(color['extreme'])
+        
+    ax.set_title('Individual Bayes Factors')
+    ax.set_xlim((-1, n_subjects))
+    ax.set_xlabel('Subjects')
+    ax.set_xticks(range(n_subjects))
+    ax.set_xticklabels([f'm{sub:02}' for sub in range(2, n_subjects+2)],
+                      rotation=-45)
+    ax.set_ylim((-3, 3))
+    ax.set_ylabel(r'$\log_{10}(BF)$', rotation=90)
+    ax.set_axisbelow(True)
+    ax.grid()
+
+    legend_elements = [Patch(facecolor=col, edgecolor='k', label=key) 
+                   for key, col in color.items()]
+    ax.legend(handles=legend_elements, bbox_to_anchor=(1, .7))
+    ax.annotate(r'$\uparrow$' + model_names[0], 
+                [1.01, .8], xycoords='axes fraction', fontsize=20)
+    ax.annotate(r'$\downarrow$' + model_names[1], 
+                [1.01, .1], xycoords='axes fraction', fontsize=20)
+    plt.tight_layout()
+    
+    if outpath:
+        fig.savefig(outpath)

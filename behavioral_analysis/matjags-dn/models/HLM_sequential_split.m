@@ -4,6 +4,7 @@ clear; clc;
 % data location
 path_root = getenv('DECIDENET_PATH');
 path_beh = fullfile(path_root, 'data/main_fmri_study/sourcedata/behavioral');
+path_jags = fullfile(path_root, 'data/main_fmri_study/derivatives/jags/samples');
 fname_beh = 'behavioral_data_clean_all.mat';
 fname_meta = 'behavioral_data_clean_all.json';
 
@@ -41,8 +42,8 @@ fname_model = fullfile(pwd, strcat(mfilename, '.txt'));
 doparallel = 1;                     % parallelization flag
 thinning = 1;                       % thinning parameter
 nChains = 4;                                        
-nBurnin = 1000;
-nSamples = 5000;
+nBurnin = 2000;
+nSamples = 15000;
 
 % Initialize Markov chain values
 for i=1:nChains
@@ -94,4 +95,3 @@ tic
     'verbosity', 2 , ...                % 0=do not produce any output; 1=minimal text output; 2=maximum text output
     'cleanup', 1 );                     % clean up of temporary files?
 toc
-
