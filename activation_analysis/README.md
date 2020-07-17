@@ -27,9 +27,10 @@ First level GLM analyis consist of three steps. First, parametrically modulated 
 
 Parametrically modulated regressors are implemented as custom `Regressor` class living within `dm_utils.glm_utils` module. `Regressor` class is a simple wrapper for nistats [function](https://nistats.github.io/modules/generated/nistats.design_matrix.make_first_level_design_matrix.html) for design matrix creation. Instance property `dm_column` corresponds to convolved regressor of interest. It allows to define and investigate modulated regressors isolation from the rest of design matrix. List of regressors objects is then passed to `my_make_first_level_design_matrix` custom function to create full design matrix. Regressors are named according to convention `reg_<phase>_<type>`. For example, `reg_res_lbp` represents regressors time-locked to the response onset and reflects all left button press events. Full table of regressors can be found within `dn_aa_01_first_level.ipynb` notebook.
 
-After fitting GLM, individual contrasts are estimated and saved as statistical maps within `<path_bids>/derivatives/nistats/first_level_output` directory.
-
 ![Trial events figure](trial_events.png?raw=true "Trial Events")
+**Trial events and GLM regressors used in first-level analysis**
+
+After fitting GLM, individual contrasts are estimated and saved as statistical maps within `<path_bids>/derivatives/nistats/first_level_output` directory.
 
 ### Second level analysis
 
