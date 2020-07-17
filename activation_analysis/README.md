@@ -29,6 +29,8 @@ Parametrically modulated regressors are implemented as custom `Regressor` class 
 
 After fitting GLM, individual contrasts are estimated and saved as statistical maps within `<path_bids>/derivatives/nistats/first_level_output` directory.
 
+![Trial events figure](trial_events.png?raw=true "Trial Events")
+
 ### Second level analysis
 
 

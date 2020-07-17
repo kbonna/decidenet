@@ -18,7 +18,7 @@ class Regressor():
     where there are mutliple parametrically modulated regressors. Automatically
     handled both cases of unmodulated and modulated regressors.
     ''' 
-    def __init__(self, name, frame_times, onset, 
+    def __init__(self, name, frame_times, onset, *,
                  duration=None, modulation=None):
         '''
         Args:
