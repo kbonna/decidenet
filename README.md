@@ -11,5 +11,7 @@ Participants underwent single MRI scanning session during which they performed t
 - `prl_task`: contains probabilistic reversal learning task used in the study. Task is written in Python using [PsychoPy](https://www.psychopy.org/) library and contains training version and scanning version used during fMRI acquisition
 - `fmri_preparation` directory enables data preparation for primary analysis. Raw NIfTI dataset is converted BIDS-compliant dataset. Then data is preprocessed by [fmriprep](https://github.com/poldracklab/fmriprep) package
 - `behavioral_analysis` directory contains script required to run entire analysis of response data acquired from the subjects: task log preprocessing, response visualisations and Bayesian modelling
-- `activation analysis` directory contains code to replicate GLM findings
+- `activation_analysis` directory contains code to replicate GLM findings
+- `connectivity_analysis` directory contains code to replicate functional connectivity analysis
 - `dn_utils` is small python module containing useful functions used throughout the analysis 
+
