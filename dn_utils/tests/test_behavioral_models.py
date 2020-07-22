@@ -1,16 +1,16 @@
 import unittest
 import sys
-sys.path.append('./..')
-
+import os
 import numpy as np
-from itertools import product
-from behavioral_models import load_behavioral_data, estimate_wbci_pd, estimate_modulation
+import itertools
 
+from dn_utils.behavioral_models import (load_behavioral_data, estimate_wbci_pd, 
+    estimate_modulation)
 
 class TestBehavioralModels(unittest.TestCase):
 
     def setUp(self):
-        beh, meta = load_behavioral_data('../../../data/main_fmri_study/sourcedata/behavioral',
+        beh, meta = load_behavioral_data('../data/main_fmri_study/sourcedata/behavioral',
                 verbose=False)
         self.beh = beh
         self.meta = meta
@@ -67,7 +67,7 @@ class TestBehavioralModels(unittest.TestCase):
     def test_estimate_modulation_perr(self):
         for sub in range(len(self.meta['dim1'])):
             for con in range(len(self.meta['dim2'])):
-                for alpha_plus, alpha_minus in product([.01, .5, .99], repeat=2): 
+                for alpha_plus, alpha_minus in itertools.product([.01, .5, .99], repeat=2): 
  
                     won_bool = self.beh[sub, con, :, self.meta['dim4'].index('won_bool')]
 
@@ -78,3 +78,6 @@ class TestBehavioralModels(unittest.TestCase):
                     idx = np.nonzero(perr)
 
                     self.assertEqual(np.all(won_bool[idx] == (perr[idx] >= 0)), True)
+
+if __name__ == '__main__':
+    unittest.main()
