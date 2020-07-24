@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import itertools
+
 from nilearn import plotting
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from .glm_utils import Regressor
@@ -53,14 +54,18 @@ def plot_trial_modulation(beh, meta, sub, con, modulations) -> None:
     ax.set_xticks(np.concatenate((np.nonzero(np.diff(block))[0] + 2, [1, 110])))
     ax.grid()
 
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-def plot_correlation_between_regressors(regressors, figsize=(7, 7)) -> None:
+def plot_correlation_between_regressors(regressors, figsize=(7, 7), 
+                                        output_file=None) -> None:
     '''Plot correlation matrix for specific set of regressors.
     
     Args:
-        regressors (list): list containing Regressor objects
-        figsize (tuple, optional): figure size
+        regressors (list): 
+            List containing Regressor objects.
+        figsize (tuple, optional): 
+            Figure size.
+        output_file (string, optional):
+            The name of an image file to export the plot to.
     '''
 
     # Calculate correlation between expected probability of winning and expected value
@@ -68,7 +73,7 @@ def plot_correlation_between_regressors(regressors, figsize=(7, 7)) -> None:
 
     for i, j in itertools.product(range(len(regressors)), repeat=2):
         if j > i:
-            corr_between_regressors[i, j] = Regressor.corrcoef(regressors[i], regressors[j])
+            corr_between_regressors[i, j] = regressors[i].corr(regressors[j])
 
     corr_between_regressors += corr_between_regressors.T
     np.fill_diagonal(corr_between_regressors, 1)
@@ -86,7 +91,7 @@ def plot_correlation_between_regressors(regressors, figsize=(7, 7)) -> None:
     ax.set_xticklabels([regressor.name for regressor in regressors])
     ax.set_yticklabels([regressor.name for regressor in regressors])
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
-
+        
     # Loop over data dimensions and create text annotations.
     for i, j in itertools.product(range(len(regressors)), repeat=2):
         if abs(corr_between_regressors[i, j]) < .5:
@@ -95,6 +100,12 @@ def plot_correlation_between_regressors(regressors, figsize=(7, 7)) -> None:
             color = 'w'
         text = ax.text(j, i, format(corr_between_regressors[i, j], '.2f'), 
                        ha="center", va="center", color=color)
+        
+    if output_file:
+        fig.savefig(output_file)
+    
+    plt.close(fig)
+        
         
 def plot_stat_maps_grid(stat_maps, labels=None, threshold=None):
     '''Plots grid of statical maps.
@@ -130,6 +141,7 @@ def plot_stat_maps_grid(stat_maps, labels=None, threshold=None):
             black_bg=True,
             display_mode='z')
         
+        
 def plot_z_convergence(rhat_z: np.array) -> None:
     '''Plots r-hat barplot for indicator variable'''
     
@@ -163,19 +175,20 @@ def plot_z_convergence(rhat_z: np.array) -> None:
     plt.tight_layout()
     plt.savefig('pygures/convergence.png')
     
-def gen_logbf_barplot(bf, model_names, outpath=None, cmap_name='bone'):
-    """Create barplots for subjectwise model comparison using log-scale.
+    
+def gen_logbf_barplot(bf, model_names, output_file=None, cmap_name='bone'):
+    '''Create barplots for subjectwise model comparison using log-scale.
 
     Args:
         bf: 
-            bayes factor vector of size n_subjects
+            Bayes factor vector of size n_subjects.
         modelname: 
-            two-element list of modelnames
-        outpath (optional):
-            path specification for saving figure
-        cmap_name: 
-            name of matplotlib colormap used to discriminate evidence levels 
-    """
+            Two-element list of modelnames.
+        output_file (optional):
+            The name of an image file to export the plot to.
+        cmap_name (optional): 
+            Name of matplotlib colormap used to discriminate evidence levels. 
+    '''
     logbf = np.log10(bf)
     
     fig, ax = plt.subplots(nrows=1, ncols=1, facecolor='w', figsize=(20, 5))
@@ -223,5 +236,44 @@ def gen_logbf_barplot(bf, model_names, outpath=None, cmap_name='bone'):
                 [1.01, .1], xycoords='axes fraction', fontsize=20)
     plt.tight_layout()
     
-    if outpath:
-        fig.savefig(outpath)
+    if output_file:
+        fig.savefig(output_file)
+        
+def plot_stat_map_custom(stat_map, bg_img, height_control='fdr', p_val=0.01, 
+                  cluster_threshold=15, title='', **plot_kwargs):
+    '''Threshold and plot statistical map.
+    
+    Args:
+        stat_map (nibabel.nifti1.Nifti1Image): 
+            Statistical map from 1st or 2nd level GLM analysis.
+        height_control (str, optional): 
+            Specifies type of multiple comparison correction.
+        p_val (float, optional): 
+            Specifies p-value threshold for statistal map.
+        cluster_threshold (int, optional): 
+            Threshold for minimal size cluster of voxels.  
+        title (str, optional):
+            Figure title.
+    '''
+    cut_coords = (-15, -10, 3, 22, 38, 52)
+    display_mode = 'z'
+    
+    _, threshold = map_threshold(
+        stat_map,
+        alpha=p_val,
+        height_control=height_control,
+        cluster_threshold=cluster_threshold)
+
+    fig, ax = plt.subplots(facecolor='k', figsize=(20, 5))
+    plotting.plot_stat_map(
+        stat_map,
+        bg_img=bg_img,
+        axes=ax,
+        threshold=threshold,
+        colorbar=True,
+        display_mode=display_mode,
+        cut_coords=cut_coords,
+        title=title + f' ({height_control}; p<{p_val})',
+        **plot_kwargs
+    )
+    plt.show()    

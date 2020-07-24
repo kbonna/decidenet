@@ -3,9 +3,11 @@
 #------------------------------------------------------------------------------#
 
 import matplotlib.pyplot as plt
-import numpy as np
+import nibabel as nib
 import pandas as pd
+import numpy as np
 import numbers
+import os
 
 from itertools import combinations
 from nistats import design_matrix
@@ -256,3 +258,28 @@ def convolve(signal, t_r=2, oversampling=50, hrf_model='spm'):
         fir_delays=None)[0].ravel()
 
     return signal_bold
+
+
+def load_first_level_stat_maps(path, tasks):
+    '''Load statistical maps (first level GLM output).
+    
+    Args:
+        path (str): 
+            Path to directory where first level output is stored. Note that 
+            files should follow BIDS-like naming convention, i.e. 
+            sub-<sub>_task-<task>_statmap.nii
+        tasks (list of str):
+            List containing all task names.
+    Returns: 
+        (list): 
+            List of size n_conditions x n_subjects. First index denotes task 
+            condition. Conditions are coded 0 for reward and 1 for punishment.
+    '''
+    tmap_files = {task: sorted([os.path.join(path, file) 
+                  for file in os.listdir(path) if task in file]) 
+                  for task in tasks}
+    tmap_imgs = {task: [nib.load(tmap_files[task][i]) 
+                 for i in range(len(tmap_files[task]))] 
+                 for task in tasks}
+    
+    return tmap_imgs
