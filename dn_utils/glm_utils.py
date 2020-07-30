@@ -13,6 +13,7 @@ from itertools import combinations
 from nistats import design_matrix
 from nistats import hemodynamic_models
 from nistats.reporting import plot_design_matrix
+from nilearn import image
 
 class Regressor:
     '''Implements representation of the single GLM regressor.
@@ -283,3 +284,71 @@ def load_first_level_stat_maps(path, tasks):
                  for task in tasks}
     
     return tmap_imgs
+
+
+def extract_img_value_for_mni_coords(mni_coords, img):
+    '''Extract image value for specific mni coordinates.
+    
+    Args: 
+        mni_coords (tuple):
+            MNI coordinates x, y, z.
+        img (Nifti1Image):
+            3D Nifti image. Can be atlas image, statistical map, T1, etc.
+    
+    Returns:
+        Image value for voxel closest to specified MNI coordinates.
+    '''    
+    array_coords = image.coord_transform(*mni_coords, np.linalg.inv(img.affine))
+    array_coords = tuple(round(array_coord) for array_coord in array_coords)
+    return img.get_fdata()[array_coords]
+
+
+def add_clusters_labels(clusters_table, atlas_img, atlas_label_codes, 
+                        atlas_name, inplace=False):
+    '''Automatic labeling of activation peaks according to provided brain atlas.
+    
+    Args:
+        clusters_table (DataFrame):
+            Output of nistats.reporting.get_clusters_table function. DataFrame
+            describing peak activations. If you want to use your custom table 
+            make sure that it has three columns: X, Y and Z describing peak
+            coordinates in MNI space.
+        atlas_img (nibabel.nifti1.Nifti1Image):
+            Atlas brain image with values for each voxel corresponding to region
+            index.
+        atlas_label_codes (dict):
+            Mapping between region index and region name. Keys should be 
+            integers corresponding to region index and values should be region 
+            names.    
+        atlas_name (str):
+            Name of the brain atlas.
+        inplace (bool, optional):
+            If True, clusters_table will be modified in place, otherwise new 
+            DataFrame is returned. 
+            
+    Returns:
+        Cluster table with additional column corresponding to peak label. 
+    '''
+    col_name = f'{atlas_name} label'
+    
+    if inplace:
+        clusters_table_extended = clusters_table
+    else:
+        clusters_table_extended = clusters_table.copy(deep=True)
+    clusters_table_extended[col_name] = ''
+    
+    for row, cluster in clusters_table.iterrows():
+
+        peak_mni_coords = np.array(cluster.loc[['X', 'Y', 'Z']], dtype='float')
+        
+        # Find region index
+        region_index = extract_img_value_for_mni_coords(
+            mni_coords=peak_mni_coords,
+            img=atlas_img
+        )
+        
+        # Find corresponding region name
+        clusters_table_extended.loc[row, col_name] = atlas_label_codes.get(
+            int(region_index), '?') 
+
+    return clusters_table_extended
