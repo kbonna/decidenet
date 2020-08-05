@@ -277,3 +277,57 @@ def plot_stat_map_custom(stat_map, bg_img, height_control='fdr', p_val=0.01,
         **plot_kwargs
     )
     plt.show()    
+    
+    
+def barplot_annotate_brackets(ax, num1, num2, text, center, height, 
+                              yerr=None, dh=.05, barh=.05, fs=None, 
+                              maxasterix=None):
+    ''' Annotate barplot with p-values.
+
+    Args:
+        ax: 
+            Axes containing barplot.
+        num1 (int): 
+            Index of left bar to put bracket over.
+        num2 (int): 
+            index of right bar to put bracket over.
+        text (str): 
+            String used for annotation. 
+        center: 
+            Centers of all bars (like plt.bar() input)
+        height: 
+            Heights of all bars (like plt.bar() input)
+        yerr (optional): 
+            Yerrs of all bars (like plt.bar() input)
+        dh (float, optional): 
+            Height offset over bar / bar + yerr in axes coordinates (0 to 1)
+        barh (float, optional): 
+            Bar height in axes coordinates (0 to 1)
+        font size (float, optional)
+            Font size for annotated text.
+    '''
+    lx, ly = center[num1], height[num1]
+    rx, ry = center[num2], height[num2]
+
+    if yerr is not None:
+        ly += yerr[num1]
+        ry += yerr[num2]
+
+    ax_y0, ax_y1 = ax.get_ylim()
+    dh *= (ax_y1 - ax_y0)
+    barh *= (ax_y1 - ax_y0)
+
+    y = max(ly, ry) + dh
+
+    barx = [lx, lx, rx, rx]
+    bary = [y, y+barh, y+barh, y]
+    mid = ((lx+rx)/2, y+barh)
+
+    # Add lines
+    ax.plot(barx, bary, c='black')
+
+    # Add text
+    kwargs = dict(ha='center', va='bottom')
+    if fs is not None:
+        kwargs['fontsize'] = fs
+    ax.text(*mid, text, **kwargs)
