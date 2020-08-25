@@ -331,3 +331,16 @@ def barplot_annotate_brackets(ax, num1, num2, text, center, height,
     if fs is not None:
         kwargs['fontsize'] = fs
     ax.text(*mid, text, **kwargs)
+    
+def aligned_imshow_cbar(ax, im):
+    '''Create nicely aligned colorbar for matrix visualisations.
+    
+    Args:
+        ax:
+            Axes object.
+        im:
+            Axes image object.
+    '''
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    plt.colorbar(im, cax=cax)
