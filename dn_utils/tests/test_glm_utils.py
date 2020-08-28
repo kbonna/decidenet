@@ -5,6 +5,9 @@ import unittest
 import itertools
 import operator
 
+import sys
+print(sys.path)
+
 from nistats import design_matrix
 from dn_utils.glm_utils import Regressor, my_make_first_level_design_matrix
 
@@ -161,7 +164,7 @@ class TestRegressor(unittest.TestCase):
         values = np.random.random(10)
         reg = Regressor.from_values('test', frame_times, values)
         self.assertTrue((frame_times == reg.frame_times).all())
-        self.assertTrue((values == reg.values).all())
+        self.assertTrue((values[:, np.newaxis] == reg.values).all())
         self.assertEqual('test', reg.name)
         
     def test_is_empty(self):
@@ -187,7 +190,7 @@ class TestRegressor(unittest.TestCase):
         reg = (Regressor.from_values('test1', frame_times, values1) +
                Regressor.from_values('test2', frame_times, values2)) 
         self.assertTrue((frame_times == reg.frame_times).all())
-        self.assertTrue((reg.values == values1 + values2).all())
+        self.assertTrue((reg.values == (values1 + values2)[:, np.newaxis]).all())
         self.assertEqual(reg.name, 'test1+test2')
         
     def test_adding_incorrect_types(self):
@@ -219,7 +222,7 @@ class TestRegressor(unittest.TestCase):
         reg = (Regressor.from_values('test1', frame_times, values1) -
                Regressor.from_values('test2', frame_times, values2)) 
         self.assertTrue((frame_times == reg.frame_times).all())
-        self.assertTrue((reg.values == values1 - values2).all())
+        self.assertTrue((reg.values == (values1 - values2)[:, np.newaxis]).all())
         self.assertEqual(reg.name, 'test1-test2')
         
     def test_multiplication(self):
@@ -230,7 +233,7 @@ class TestRegressor(unittest.TestCase):
             # right handed __mul__ is also tested here
             reg = scalar * Regressor.from_values('test1', frame_times, values)
             self.assertTrue((frame_times == reg.frame_times).all())
-            self.assertTrue((reg.values == values * scalar).all())
+            self.assertTrue((reg.values == (values * scalar)[:, np.newaxis]).all())
             self.assertEqual(reg.name, f'{scalar}*test1')
             
     def test_multiplication_incorrect_types(self):
@@ -254,7 +257,7 @@ class TestRegressor(unittest.TestCase):
                          b*Regressor.from_values('test2', frame_times, values2)) 
                 self.assertTrue((frame_times == reg.frame_times).all())
                 true_values = fn(a * values1, b * values2)
-                self.assertTrue((reg.values ==  true_values).all())
+                self.assertTrue((reg.values ==  true_values[:, np.newaxis]).all())
                 sign = '+' if fn == operator.add else '-'
                 self.assertEqual(reg.name, f'{a}*test1{sign}{b}*test2')
         
@@ -265,7 +268,7 @@ class TestRegressor(unittest.TestCase):
         for scalar in (-2, -1, -0.5, .5, 1, 2):
             reg = Regressor.from_values('test1', frame_times, values) / scalar
             self.assertTrue((frame_times == reg.frame_times).all())
-            self.assertTrue((reg.values == values / scalar).all())
+            self.assertTrue((reg.values == (values / scalar)[:, np.newaxis]).all())
             self.assertEqual(reg.name, f'{1/scalar}*test1')
             
     def test_corr_method(self):
@@ -298,6 +301,16 @@ class TestRegressor(unittest.TestCase):
         self.assertTrue(np.mean(reg1.values) > 10**(-15))
         self.assertTrue(np.mean(reg2.values) > 10**(-15))
         self.assertTrue(np.mean(reg3.values) > 10**(-15))
+
+    def test_alternative_constructor_from_values(self):
+        frame_times = np.arange(100) * 2
+        reg1 = Regressor('test', frame_times, onset=[0])
+        reg2 = Regressor.from_values(
+            'test_from_values',
+            frame_times=np.arange(100)*2, 
+            values=np.zeros(100))
+        self.assertEqual(reg1.values.shape, reg2.values.shape)
+
 
 class TestMyMakeFirstLevelDesignMatrix(unittest.TestCase):
     

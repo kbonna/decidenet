@@ -89,7 +89,7 @@ class Regressor:
         super(Regressor, obj).__init__()
         obj._name = name
         obj._frame_times = frame_times
-        obj._values = np.array(values)
+        obj._values = np.array(values)[:, np.newaxis]
         
         return obj
         
@@ -145,7 +145,7 @@ class Regressor:
         result = self.from_values(
             name=f'{self.name}+{other.name}',
             frame_times=self._frame_times,
-            values=self._values+other._values
+            values=(self._values+other._values).flatten()
         )         
         return result
     
@@ -156,7 +156,7 @@ class Regressor:
         result = self.from_values(
             name=f'{other}*{self.name}',
             frame_times=self._frame_times,
-            values=self._values*other
+            values=(self._values*other).flatten()
         )    
         return result
         
