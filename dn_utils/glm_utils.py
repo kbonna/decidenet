@@ -352,3 +352,55 @@ def add_clusters_labels(clusters_table, atlas_img, atlas_label_codes,
             int(region_index), '?') 
 
     return clusters_table_extended
+
+
+def upsampled_events(t_r, n_volumes, onset, duration, modulation=None, 
+                     sampling_rate=1/16):
+    '''Create upsampled regressors from given events.
+    
+    This function is used to create upsampled psychological regressors. These 
+    can be used to create interaction regressors in PPI analysis. Since 
+    deconvolved neural signal is usually upsampled (sixteen times by default is 
+    SPM) and interaction regressors have to be created in the neural domain, 
+    psychological regressor has to be upsampled to match sample rate for the
+    neural regressor. Then PPI regressor can be calculated as point-by-point 
+    multiplication of psychological and physiological regressors.
+    
+    Args:
+        t_r (float):
+            Scanning repetition time (TR).
+        n_volumes (int):
+            Number of scans for entire task.
+        onset (iterable):
+            Contains all event onset (in seconds).
+        duration (float):
+            Duration of event. Here, we assume all events have same duration.
+        modulation (iterable, optional):
+            Events amplitude modulation.
+        sampling_rate (float):
+            Upsampling rate. For 16-fold upsampling sampling_rate is 1/16.
+            
+    Returns:
+        Numpy 1D array of length n_volumes / sampling_rate. Note that this 
+        function returns demeaned psychological regressor (omitting demeaning 
+        can produce spurious PPI effects if deconvolution is imperfect).
+    '''
+    if modulation is None:
+        modulation = np.ones((len(onset), ))
+    
+    if duration > 0:
+        n_frames_per_event = int(duration / (t_r * sampling_rate))
+    elif duration == 0:
+        n_frames_per_event = 1
+    else: 
+        raise ValueError('duration should be non negative float')
+        
+    frame_times_up = np.arange(0, n_volumes*t_r, t_r*sampling_rate)
+    ts_event_up = np.zeros(frame_times_up.shape)
+
+    for event, amplitude in zip(onset, modulation):
+        first_frame = np.argmax(frame_times_up >= event)
+        ts_event_up[range(first_frame, 
+                          first_frame + n_frames_per_event)] = amplitude
+        
+    return ts_event_up - ts_event_up.mean()
