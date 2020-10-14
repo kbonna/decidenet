@@ -57,7 +57,7 @@ for con = 1 : Ncon
             %--- create structure for spm_PEB
             P{1}.X = [Hxb X0];           % design matrix for lowest level
             P{1}.C = speye(N, N) / 4;    % i.i.d assumptions
-            P{2}.X = sparse(N+M, 1);     % design matrix for parameters (0's)
+            P{2}.X = sparse(N + M, 1);     % design matrix for parameters (0's)
             P{2}.C = Q;
 
             %--- deconvolve
