@@ -222,6 +222,16 @@ def g_square(beh, meta, subject, condition, prob):
 
     return (-2) * ll
 
+def calculate_reversals(response):
+    '''Calculate number of side switches in subject responses.
+    
+    Args:
+        response (np.array):
+            Vector representing individual subject responses. Each response is
+            coded either 1 for right side, -1 for left side or 0 for miss. 
+            Misses are ignored during calculation.
+    '''
+    return len(np.nonzero(np.diff(response[np.nonzero(response)]))[0])
 
 ### Full Models ################################################################
 def model1(beh, meta, subject, condition, alpha):

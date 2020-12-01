@@ -1,5 +1,7 @@
 *__pycache__*
 .trash
 .ipynb_checkpoints
+.gitignore
 figures
 behavioral_analysis/matjags-master
+.vscode

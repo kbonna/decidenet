@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import numpy as np
 import itertools
 
@@ -344,3 +345,139 @@ def aligned_imshow_cbar(ax, im):
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(im, cax=cax)
+    return cax
+    
+def hex_to_rgb(h):
+    '''Converts hex color string into RGB tuple with values from 0 to 1.'''
+    if h.startswith('#'):
+        h = h[1:]
+    return tuple(int(h[i:i+2], 16)/255 for i in (0, 2, 4))
+
+def barplot_annotate(ax, text, bar_x, bar_y, offset_bar, offset_top, 
+                     line_kwargs=None, annotate_kwargs=None):
+    '''Annotate barplot with text and lines between two individual bars.
+    
+    Args:
+        ax (Axes):
+            Axes with barplot.
+        text (str):
+            Annotation text.
+        bar_x (list):
+            X-coordinates of bar centers. Should be of length 2.
+        bar_y (list):
+            Height of bars. Should be of length 2.
+        offset_bar (float):
+            Line offset from the top of bars.
+        offset_top (float):
+            Text offset from the top of the higher bar (excluding offset_bar).
+        line_kwargs (dict, optional):
+            Optional arguments for plt.plot used to create lines.
+        annotate_kwargs (dict, optional):
+            Optional arguments for plt.text used to create text annotation.
+    '''
+    line_kwargs = {'color': 'k'} if line_kwargs is None else line_kwargs
+    annotate_kwargs = {'backgroundcolor': '#ffffff'} \
+                      if annotate_kwargs is None else annotate_kwargs
+    x_annotate = np.mean(bar_x)
+    y_annotate = np.max(bar_y) + offset_bar + offset_top
+
+    # Create lines
+    ax.plot(bar_x, [y_annotate, y_annotate], **line_kwargs)
+    
+    for idx in range(2):
+        ax.plot([bar_x[idx], bar_x[idx]], 
+                [bar_y[idx] + offset_bar, y_annotate], 
+                **line_kwargs)
+    
+    ax.annotate(
+        s=text,
+        xy=[x_annotate, y_annotate],
+        ha='center',
+        va='center',
+        **annotate_kwargs
+    )
+    
+def plot_design_matrix(X, colors=None, output_file=None):
+    '''Visualise GLM design matrix. 
+    
+    Args:
+        X (pd.Dataframe):
+            Design matrix. Each column correspond to single GLM regressor. 
+            Column names will be used to label subplots. Index should be scan
+            time in seconds.
+        colors (list of string, optional):
+            Colors for each regressor. Use it to distinguish different regressor 
+            types.
+        output_file (string, optional):
+            The name of an image file to export the plot to.    
+    '''
+    mpl.rcParams.update({'font.size': 13})
+    colors = colors if colors is not None else ['b'] * X.shape[1]
+    
+    fig, axs = plt.subplots(
+        nrows=X.shape[1], 
+        sharex=True, 
+        figsize=(25, 12.5), 
+        facecolor='w'
+    )
+
+    for i, column in enumerate(X):
+        axs[i].plot(X.index, X[column], color=colors[i], label=column)
+        axs[i].legend(loc='upper right', framealpha=1)
+        axs[i].set_xlim([0, max(X.index)])
+
+    axs[0].set_title('PPI linear model regressors')
+    axs[-1].set_xlabel('Time [seconds]')
+    
+    plt.tight_layout()
+    
+    if output_file:
+        fig.savefig(output_file)
+        plt.close(fig)
+    else:
+        plt.show()
+        
+
+def plot_regressors_correlation(X, colors=None, output_file=None):
+    '''Visualise correlation between individual regressors in GLM design matrix. 
+    
+    Args:
+        X (pd.Dataframe):
+            Design matrix. Each column correspond to single GLM regressor. 
+            Column names will be used to label subplots. Index should be scan
+            time in seconds.
+        colors (list of string, optional):
+            Colors for each regressor. Use it to distinguish different regressor 
+            types.
+        output_file (string, optional):
+            The name of an image file to export the plot to.    
+    '''
+    mpl.rcParams.update({'font.size': 13})
+    colors = colors if colors is not None else ['b'] * X.shape[1]
+    
+    fig, ax = plt.subplots(figsize=(6, 6), facecolor='w')
+    im = ax.imshow(X.corr(), cmap='RdBu_r', clim=[-1, 1])
+
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    plt.colorbar(im, cax=cax)
+
+    ax.set_xticks(np.arange(X.shape[1]))
+    ax.set_yticks(np.arange(X.shape[1]))
+    ax.set_xticklabels(X.columns, rotation=90)
+    ax.set_yticklabels(X.columns)
+    ax.set_title('Correlation between regressors')
+
+    for xticklabel, yticklabel, tickcolor in zip(ax.get_xticklabels(), 
+                                                 ax.get_yticklabels(), 
+                                                 colors):
+        xticklabel.set_color(tickcolor)
+        yticklabel.set_color(tickcolor)
+
+    plt.tight_layout()
+
+    if output_file:
+        fig.savefig(output_file)
+        plt.close(fig)
+    else:
+        plt.show()
