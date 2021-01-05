@@ -411,13 +411,13 @@ def plot_design_matrix(X, colors=None, output_file=None):
         output_file (string, optional):
             The name of an image file to export the plot to.    
     '''
-    mpl.rcParams.update({'font.size': 13})
+    mpl.rcParams.update({'font.size': 8})
     colors = colors if colors is not None else ['b'] * X.shape[1]
     
     fig, axs = plt.subplots(
         nrows=X.shape[1], 
         sharex=True, 
-        figsize=(25, 12.5), 
+        figsize=(13, 7), 
         facecolor='w'
     )
 
