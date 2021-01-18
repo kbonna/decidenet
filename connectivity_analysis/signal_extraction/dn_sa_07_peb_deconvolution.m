@@ -4,8 +4,8 @@ path_out = fullfile(path_root, 'data/main_fmri_study/derivatives/ppi');
 path_timeseries = fullfile(path_out, 'timeseries');
 
 %--- select raw timeseries filtered confounds table (as .mat files)
-fname_raw_timeseres = 'timeseries_pipeline-null_atlas-customROI_bold.mat';
-fname_filtered_confounds = 'confounds_pipeline-24HMPCSFWM.mat';
+fname_raw_timeseres = 'timeseries_pipeline-null_atlas-meta2ROI_bold.mat';  % !!!
+fname_filtered_confounds = 'confounds_pipeline-24HMPCSFWM.mat';            
 pipeline_name = '24HMPCSFWM';
 
 load(fullfile(path_timeseries, fname_raw_timeseres));
