@@ -481,3 +481,57 @@ def plot_regressors_correlation(X, colors=None, output_file=None):
         plt.close(fig)
     else:
         plt.show()
+        
+def plot_matrix(mat, clim=[-1, 1], labels=None, annotate=False, title=None):
+    '''Basic plotting utility for adjacency matices.
+    
+    Args:
+        mat (np.array):
+            Adjacency matrix.
+        clim (list of floats, optional):
+            Two-element list specifying color limits. Defaults to range from -1
+            to 1 suitable for visualisation of adjacency matrices.
+        labeles (list-like, optional):
+            Labels for individual network nodes.
+        annotate (bool, optional):
+            Annotation of individual connections. Defaults to False.
+        title (str, optional):
+            Plot tilte.
+            
+    Return:
+        None.
+    '''
+    
+    fig, ax = plt.subplots(figsize=(10, 10), facecolor='w')
+    im = ax.imshow(mat, clim=clim, cmap='RdBu_r', interpolation='none')
+    aligned_imshow_cbar(ax, im)
+    
+    if labels is not None:
+        ax.set_xticks(np.arange(mat.shape[1]))
+        ax.set_yticks(np.arange(mat.shape[0]))
+        ax.set_xticklabels(labels, rotation=90)
+        ax.set_yticklabels(labels)
+        
+    if annotate:
+        clim_range = clim[1] - clim[0]
+        for i in range(mat.shape[0]):
+            for j in range(mat.shape[1]):
+                value = mat[i, j]
+                if value < (clim[0] + clim_range * 0.2) or \
+                   value > (clim[1] - clim_range * 0.2):
+                    color = 'w'
+                else:
+                    color = 'k'
+                text = ax.text(
+                    j, 
+                    i, 
+                    f'{value:.2f}',
+                    ha='center', 
+                    va='center', 
+                    color=color
+                )
+                
+    if title:
+        ax.set_title(title)
+
+    plt.tight_layout()
