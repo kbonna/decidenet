@@ -68,3 +68,28 @@ def networks_mean(mat, net_names):
             )
 
     return unique_nets, mat_mean
+
+
+def agreemenet_networks(m, nets, unique_nets):
+    """Calculate agreement between set of a priori communities given network 
+    division.
+    
+    Args:
+        m (np.array):
+            Community asignment vector.
+        nets (np.array):
+            A priori defined communities.
+        unique_nets (np.array):
+            Unique entries of nets. Resulting matrix rows and columns will 
+            correspond to these.
+    """
+    return np.array(
+        [
+            [
+                np.mean(m[nets == i] == m[nets == j][:, np.newaxis])
+                - (1 / np.sum(nets == i)) * (i == j)
+                for i in unique_nets
+            ]
+            for j in unique_nets
+        ]
+    )

@@ -1,5 +1,9 @@
 from itertools import product
+
 import pandas as pd
+import numpy as np
+
+from nilearn.image import math_img, iter_img
 
 def tidy_data(array, labels, depvar=None, columns=None):
     """ Transorm multidimensional array into tidy-style dataframe. 
@@ -59,3 +63,28 @@ def tidy_data(array, labels, depvar=None, columns=None):
         columns=[depvar]+columns
     )
     return tidy_df
+
+def normalize_4d_nifti(img):
+    """Normalize 4d nifti image by subtracting mean voxel intensity over time 
+    and dividing by voxel intensity standard deviation over time.
+    
+    Args:
+        img (4d Nifti1Image):
+            Represent fMRI timecourse.
+    
+    Returns:
+        List of individual timepoint 3d normalized images. To concatenate back
+        to 4d use cocnat_images function from nibabel.funcs
+    """
+    img_std = math_img("np.std(img, axis=-1)", img=img)
+    img_mean = math_img("np.mean(img, axis=-1)", img=img)
+    img_list = []
+
+    for img_3d in iter_img(img):
+        img_list.append(math_img(
+            "np.divide(img_3d-img_mean, img_std, where=(img_std!=0))", 
+            img_3d=img_3d, 
+            img_mean=img_mean, 
+            img_std=img_std))
+
+    return img_list
