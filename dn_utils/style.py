@@ -61,3 +61,28 @@ POWER_COLORS = {
     "Pale blue": "#87ceeb",
     "Pink": "#ff1493",
 }
+
+
+rc = {}
+rc["font.family"] = "Helvetica"
+rc["font.size"] = 19
+
+rc['axes.linewidth'] = 2
+
+rc["xtick.direction"] = "in"
+rc["xtick.major.size"] = 10
+rc["xtick.major.width"] = 2
+rc["xtick.minor.size"] = 7
+rc["xtick.minor.width"] = 2
+rc["xtick.top"] = True
+
+rc["ytick.direction"] = "in"
+rc["ytick.major.size"] = 10
+rc["ytick.major.width"] = 2
+rc["ytick.minor.size"] = 6
+rc["ytick.minor.width"] = 2
+rc["ytick.right"] = True
+
+rc["legend.frameon"] = False
+rc["legend.fontsize"] = 16
+

@@ -70,7 +70,7 @@ def networks_mean(mat, net_names):
     return unique_nets, mat_mean
 
 
-def agreemenet_networks(m, nets, unique_nets):
+def agreement_networks(m, nets, unique_nets):
     """Calculate agreement between set of a priori communities given network 
     division.
     
