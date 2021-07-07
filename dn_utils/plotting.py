@@ -580,7 +580,7 @@ def plot_matrix(mat, clim=[-1, 1], labels=None, annotate=False,
     if labels is not None:
         if all(is_color_like(c) for c in labels):
             # Case 1: Labels are colors
-            colors = [to_rgb(c) for c in df_roi["netColor"]]
+            colors = [to_rgb(c) for c in labels]
             colors_h = np.array(colors)[np.newaxis, ...]
             colors_v = np.transpose(colors_h, axes=(1, 0, 2))
             ax.set_xticks([])

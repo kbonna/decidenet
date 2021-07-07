@@ -1,30 +1,52 @@
 import matplotlib.colors as mc
+import matplotlib as mpl
 import colorsys
 
-BLUE_BLACK = '#182C4B'
-BLUE_DARK = '#315895'
-BLUE = '#5E88CA'
-BLUE_LIGHT = '#93AFDB'
-BLUE_PALE = '#C8D6EC'
+from cycler import cycler
 
-ORANGE_BLACK = '#563404'
-ORANGE_DARK = '#A96707'
-ORANGE = '#F49915'
-ORANGE_LIGHT = '#F7BA62'
-ORANGE_PALE = '#FBDCAF'
+BLUE_BLACK = "#182C4B"
+BLUE_DARK = "#315895"
+BLUE = "#5E88CA"
+BLUE_LIGHT = "#93AFDB"
+BLUE_PALE = "#C8D6EC"
+
+ORANGE_BLACK = "#563404"
+ORANGE_DARK = "#A96707"
+ORANGE = "#F49915"
+ORANGE_LIGHT = "#F7BA62"
+ORANGE_PALE = "#FBDCAF"
 
 # task stimuli colors
 BLUE_TASK = "#56B4E9" 
 YELLOW_TASK = "#F0E442" 
 
 MPL_STYLES = {
-    'font.size': 16, 
-    'font.family': 'Helvetica',
-    'axes.titlesize': 16,
-    'ytick.major.width': 1.3,
-    'lines.linewidth': 1.3,
-    'axes.linewidth': 1.3,
-    'legend.framealpha': 0,
+    "font.size": 19, 
+    "font.family": "Helvetica",
+    "lines.linewidth": 2, 
+    
+    "axes.prop_cycle": cycler(color=[BLUE, ORANGE, "#7fb685", "#f97068", "#ce84ad"]),
+    "axes.titlesize": 16,
+    "axes.linewidth": 2,
+    "axes.spines.top": True,
+    "axes.spines.right": True,
+
+    "xtick.direction": "out", 
+    "xtick.major.size": 7,
+    "xtick.major.width": 2,
+    "xtick.minor.size": 4,
+    "xtick.minor.width": 2,
+    "xtick.top": False,
+    "ytick.direction": "out", 
+    "ytick.major.size": 7,
+    "ytick.major.width": 2,
+    "ytick.minor.size": 4,
+    "ytick.minor.width": 2,
+    "ytick.right": False,
+    
+    "legend.frameon": False,
+    "legend.fontsize": 16,
+    "legend.framealpha": 0,
 }
 
 def lighten_color(color, amount=0.5):
@@ -32,8 +54,8 @@ def lighten_color(color, amount=0.5):
     Input can be matplotlib color string, hex string, or RGB tuple.
 
     Examples:
-        >> lighten_color('g', 0.3)
-        >> lighten_color('#F034A3', 0.6)
+        >> lighten_color("g", 0.3)
+        >> lighten_color("#F034A3", 0.6)
         >> lighten_color((.3,.55,.1), 0.5)
     """
 
@@ -63,26 +85,4 @@ POWER_COLORS = {
 }
 
 
-rc = {}
-rc["font.family"] = "Helvetica"
-rc["font.size"] = 19
-
-rc['axes.linewidth'] = 2
-
-rc["xtick.direction"] = "in"
-rc["xtick.major.size"] = 10
-rc["xtick.major.width"] = 2
-rc["xtick.minor.size"] = 7
-rc["xtick.minor.width"] = 2
-rc["xtick.top"] = True
-
-rc["ytick.direction"] = "in"
-rc["ytick.major.size"] = 10
-rc["ytick.major.width"] = 2
-rc["ytick.minor.size"] = 6
-rc["ytick.minor.width"] = 2
-rc["ytick.right"] = True
-
-rc["legend.frameon"] = False
-rc["legend.fontsize"] = 16
 

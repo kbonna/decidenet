@@ -1,12 +1,46 @@
-from scipy.stats import zscore
 import numpy as np
+import pandas as pd
 
-def zscore_network(arr):
-    '''Trnaform adjacency matrix into new one applying z-score transform to 
+from scipy.stats import zscore
+from statsmodels.stats.multitest import fdrcorrection
+
+def fdrcorrection_matrix(arr, include_diagonal=True):
+    """Apply FDR correction for matrix elements including diagonal entries.
+    
+    Args:
+        arr (np.array):
+            Matrix containing p-values.
+        include_diagoonal (bool, optional):
+            Whether diaganal elements should also be corrected. Defaults to 
+            True.
+            
+    Returns:
+        Matrix containing corrected p-values.    
+    """
+    n = arr.shape[0]
+    k = 0 if include_diagonal else 1
+    
+    # Vectorize
+    v_triu = arr[np.triu_indices(n, k=k)]
+
+    # Restore 2D matrix
+    new = np.zeros((n, n))
+    new[np.triu_indices(n, k=k)] = fdrcorrection(v_triu)[1]
+    new = new + np.tril(new.T, k=-1)
+    
+    return new
+
+
+def zscore_matrix(arr):
+    '''Transform adjacency matrix into new one applying z-score transform to 
     each individual element.'''
     new_arr = .5 * np.log((1 + arr) / (1 - arr))
     new_arr[np.diag_indices_from(new_arr)] = np.nan
     return new_arr
+    
+def zscore_vector(arr):
+    """Transform 1D vector into new one calculating z-score for each element."""
+    return (arr - np.mean(arr)) / np.std(arr)
     
 def standardize_network(arr):
     '''Transforms adjacency matrix into new one applying standarization to 
@@ -34,6 +68,7 @@ def standardize_network(arr):
         new = new + np.diag(np.diag(arr))
         
     return new
+
 
 def networks_mean(mat, net_names):
     '''Calculate mean values of matrix for between-networks blocks.
@@ -93,3 +128,29 @@ def agreement_networks(m, nets, unique_nets):
             for j in unique_nets
         ]
     )
+
+
+def communities_overlap(m1, m2):
+    """Calculate overlap matrix between two community vectors.
+    
+    Args:
+        m1, m2 (pd.Series):
+            Community vectors. Lenght should be equal to number of network 
+            nodes. 
+    """
+    
+    if len(m1) != len(m2): 
+        raise ValueError(
+            f"m1 and m2 should have equal length ({len(m1)} != {len(m2)}) ")
+    if (m1.index != m2.index).any():
+            f"m1 and m2 should have consistent index"
+
+    m1_unique = m1.unique()
+    m2_unique = m2.unique()
+
+    df = pd.DataFrame(index=m1_unique, columns=m2_unique)
+    for c in m2_unique:
+        df[c] = m1[m2 == c].value_counts()        
+    df = df.fillna(0)
+
+    return df.astype(int)
